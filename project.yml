@@ -1,0 +1,113 @@
+name: ScreenForge
+options:
+  bundleIdPrefix: com.local
+  deploymentTarget:
+    macOS: "26.0"
+  createIntermediateGroups: true
+  developmentLanguage: en
+packages:
+  Sparkle:
+    url: https://github.com/sparkle-project/Sparkle
+    from: "2.6.4"
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    MACOSX_DEPLOYMENT_TARGET: "26.0"
+    CODE_SIGN_IDENTITY: "-"
+    CODE_SIGN_STYLE: Manual
+    DEVELOPMENT_TEAM: ""
+    ENABLE_HARDENED_RUNTIME: YES
+    DEAD_CODE_STRIPPING: YES
+targets:
+  ScreenForge:
+    type: application
+    platform: macOS
+    sources:
+      - path: ScreenForge
+        excludes:
+          - "**/*.md"
+          - "**/*.iconset/**"
+      - path: ScreenForge/Resources/AppIcon.icns
+        buildPhase: resources
+    dependencies:
+      - package: Sparkle
+        product: Sparkle
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.local.ScreenForge
+        PRODUCT_NAME: ScreenForge
+        INFOPLIST_FILE: ScreenForge/Resources/Info.plist
+        GENERATE_INFOPLIST_FILE: NO
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        COMBINE_HIDPI_IMAGES: YES
+        SWIFT_STRICT_CONCURRENCY: minimal
+        ENABLE_TESTABILITY: YES
+        OTHER_LDFLAGS: ["-lsqlite3"]
+        INFOPLIST_KEY_CFBundleIconFile: AppIcon
+        INFOPLIST_KEY_CFBundleIconName: AppIcon
+        LD_RUNPATH_SEARCH_PATHS: "@executable_path/../Frameworks"
+    info:
+      path: ScreenForge/Resources/Info.plist
+      properties:
+        CFBundleName: ScreenForge
+        CFBundleDisplayName: ScreenForge
+        CFBundleIdentifier: com.local.ScreenForge
+        CFBundleShortVersionString: "1.0.0"
+        CFBundleVersion: "1"
+        CFBundleDevelopmentRegion: en
+        CFBundleLocalizations: [en, pl]
+        LSMinimumSystemVersion: "26.0"
+        LSUIElement: true
+        NSHighResolutionCapable: true
+        NSPrincipalClass: NSApplication
+        NSScreenCaptureUsageDescription: ScreenForge needs Screen Recording only to take local screenshots. Images never leave your Mac.
+        SUFeedURL: https://github.com/fabianszymczak1-cloud/ScreenForge/releases/latest/download/appcast.xml
+        SUPublicEDKey: x1EY7L2lr4TL3H28I7wEybGtaFq/0zDiVyrHE4CtoEA=
+        SUEnableAutomaticChecks: true
+        SUScheduledCheckInterval: 86400
+  ScreenForgeTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources:
+      - ScreenForgeTests
+    dependencies:
+      - target: ScreenForge
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.local.ScreenForgeTests
+        GENERATE_INFOPLIST_FILE: YES
+        TEST_HOST: "$(BUILT_PRODUCTS_DIR)/ScreenForge.app/Contents/MacOS/ScreenForge"
+        BUNDLE_LOADER: "$(TEST_HOST)"
+  ScreenForgeIntegrationTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources:
+      - ScreenForgeIntegrationTests
+    dependencies:
+      - target: ScreenForge
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.local.ScreenForgeIntegrationTests
+        GENERATE_INFOPLIST_FILE: YES
+        TEST_HOST: "$(BUILT_PRODUCTS_DIR)/ScreenForge.app/Contents/MacOS/ScreenForge"
+        BUNDLE_LOADER: "$(TEST_HOST)"
+schemes:
+  ScreenForge:
+    build:
+      targets:
+        ScreenForge: all
+        ScreenForgeTests: [test]
+        ScreenForgeIntegrationTests: [test]
+    run:
+      config: Debug
+    test:
+      config: Debug
+      targets:
+        - ScreenForgeTests
+        - ScreenForgeIntegrationTests
+    profile:
+      config: Release
+    analyze:
+      config: Debug
+    archive:
+      config: Release

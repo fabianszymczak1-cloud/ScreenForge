@@ -1,0 +1,66 @@
+import Foundation
+import AppKit
+
+@MainActor
+final class AppLifecycleController {
+    private let services: AppServices
+
+    init(services: AppServices) {
+        self.services = services
+    }
+
+    func start() {
+        services.history.open()
+        services.displays.refresh()
+        services.menuBar.install()
+        services.hotkeys.registerAll()
+        Task {
+            await services.permissions.refreshAsync()
+            // Full wizard only when onboarding was never completed.
+            // Do not re-open it solely because CGPreflight briefly reports false.
+            if !services.settings.hasCompletedOnboarding {
+                services.permissions.showOnboardingIfNeeded(force: true)
+            } else if services.settings.checkPermissionsOnLaunch && !services.permissions.hasScreenRecording {
+                services.notifications.show(
+                    title: String(localized: "Permission missing"),
+                    body: String(localized: "Screen Recording appears unavailable. Check permissions in the ScreenForge menu.")
+                )
+            }
+        }
+        recoverAutosavesIfNeeded()
+        NotificationCenter.default.addObserver(
+            forName: NSApplication.didChangeScreenParametersNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor in
+                self?.services.displays.refresh()
+            }
+        }
+    }
+
+    func prepareForTermination() {
+        services.editorWindows.flushAutosaves()
+        services.hotkeys.unregisterAll()
+        services.history.close()
+    }
+
+    private func recoverAutosavesIfNeeded() {
+        let urls = ProjectDocumentSerializer.recoveryURLs()
+        guard !urls.isEmpty else { return }
+        let alert = NSAlert()
+        alert.messageText = String(localized: "Document recovery")
+        alert.informativeText = String(localized: "Found \(urls.count) unsaved documents. Open them?")
+        alert.addButton(withTitle: String(localized: "Recover"))
+        alert.addButton(withTitle: String(localized: "Discard"))
+        if alert.runModal() == .alertFirstButtonReturn {
+            for url in urls {
+                services.editorWindows.openProject(url: url)
+            }
+        } else {
+            for url in urls {
+                try? FileManager.default.removeItem(at: url)
+            }
+        }
+    }
+}
