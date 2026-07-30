@@ -2,7 +2,7 @@ import AppKit
 import SwiftUI
 import Carbon.HIToolbox
 
-/// Window/actions helper. Menu bar UI is SwiftUI `MenuBarExtra`.
+/// Window/actions helper. Status item is owned by `AppDelegate` (PasteRush-style).
 @MainActor
 final class MenuBarController: NSObject {
     private var services: AppServices { AppServices.shared }
@@ -14,18 +14,15 @@ final class MenuBarController: NSObject {
     }
 
     func install() {
-        // MenuBarExtra is owned by ScreenForgeApp scene.
+        // Status item is owned by AppDelegate.
     }
 
     func applyMenuBarIconVisibility() {
-        // MenuBarExtra `isInserted` binds to settings.showMenuBarIcon.
-        if !services.settings.showMenuBarIcon {
-            services.settings.showMenuBarIcon = true
-        }
+        AppDelegate.shared?.applyMenuBarIconPreference()
     }
 
     func rebuildMenu() {
-        // SwiftUI MenuBarExtraContent rebuilds from settings automatically.
+        AppDelegate.shared?.applyMenuBarIconPreference()
     }
 
     @objc func captureRegion() { Task { await services.captureRegion(destination: .editor) } }
