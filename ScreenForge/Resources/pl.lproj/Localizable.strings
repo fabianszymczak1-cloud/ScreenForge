@@ -145,6 +145,8 @@
 "Permission missing" = "Brak uprawnienia";
 "Permissions" = "Uprawnienia";
 "Pin" = "Przypnij";
+"Request permission" = "Poproś o uprawnienie";
+"After granting in System Settings, use Check again. If macOS still requires a restart, use Relaunch." = "Po nadaniu w Ustawieniach systemowych użyj Sprawdź ponownie. Jeśli macOS nadal wymaga restartu, użyj Uruchom ponownie.";
 "Pixelate" = "Pikselizacja";
 "Pixelate" = "Pixelate";
 "Polyline" = "Łamana";

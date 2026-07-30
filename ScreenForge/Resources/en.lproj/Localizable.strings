@@ -145,6 +145,8 @@
 "Permission missing" = "Permission missing";
 "Permissions" = "Permissions";
 "Pin" = "Pin";
+"Request permission" = "Request permission";
+"After granting in System Settings, use Check again. If macOS still requires a restart, use Relaunch." = "After granting in System Settings, use Check again. If macOS still requires a restart, use Relaunch.";
 "Pixelate" = "Pixelate";
 "Pixelate" = "Pixelate";
 "Polyline" = "Polyline";

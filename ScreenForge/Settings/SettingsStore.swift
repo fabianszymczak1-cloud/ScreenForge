@@ -204,6 +204,8 @@ final class SettingsStore: ObservableObject {
     }
 
     init() {
+        Self.migrateLegacyPreferencesIfNeeded()
+
         let defaults = UserDefaults.standard
         let p = "sf."
         func b(_ k: String, _ def: Bool) -> Bool { defaults.object(forKey: p + k) as? Bool ?? def }
@@ -268,6 +270,28 @@ final class SettingsStore: ObservableObject {
             hotkeyBindings = HotkeyBinding.defaults
         }
         PerformanceMonitor.shared.isEnabled = developerMode
+    }
+
+    /// Copy `sf.*` keys from older bundle IDs (Tahoe Control Center can poison an ID).
+    private static func migrateLegacyPreferencesIfNeeded() {
+        let current = UserDefaults.standard
+        if current.object(forKey: "sf.prefsMigratedToAppScreenforge") as? Bool == true { return }
+        // Prefer copying when this domain is empty of core keys.
+        let needsSeed = current.object(forKey: "sf.onboarding") == nil
+        let legacyIDs = ["com.screenforge.macos", "com.screenforge.app", "com.local.ScreenForge"]
+        if needsSeed {
+            for id in legacyIDs {
+                guard let legacy = UserDefaults(suiteName: id) else { continue }
+                let dict = legacy.dictionaryRepresentation()
+                var copied = false
+                for (key, value) in dict where key.hasPrefix("sf.") {
+                    current.set(value, forKey: key)
+                    copied = true
+                }
+                if copied { break }
+            }
+        }
+        current.set(true, forKey: "sf.prefsMigratedToAppScreenforge")
     }
 
     /// Safe to call before NSApp exists (no-op). Always accessory with LSUIElement.

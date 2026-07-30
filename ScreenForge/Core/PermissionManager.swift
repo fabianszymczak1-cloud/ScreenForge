@@ -103,8 +103,9 @@ final class PermissionManager: NSObject, ObservableObject, NSWindowDelegate {
         }
         closePermissionsWindow()
         let view = OnboardingView(permissions: self) { [weak self] in
-            self?.onboardingWindow?.close()
             AppServices.shared.settings.hasCompletedOnboarding = true
+            AppDelegate.shared?.lifecycleRegisterHotkeysAfterOnboarding()
+            self?.onboardingWindow?.close()
         }
         let hosting = NSHostingController(rootView: view)
         let window = NSWindow(contentViewController: hosting)
@@ -121,6 +122,11 @@ final class PermissionManager: NSObject, ObservableObject, NSWindowDelegate {
 
     /// Compact Screen Recording panel (post-onboarding / menu check).
     func presentPermissionsGate() {
+        // Never displace the first-run wizard — PasteRush keeps onboarding until finish.
+        if !AppServices.shared.settings.hasCompletedOnboarding {
+            presentOnboarding()
+            return
+        }
         if let existing = permissionsWindow {
             existing.makeKeyAndOrderFront(nil)
             NSApp.activate(ignoringOtherApps: true)

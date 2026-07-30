@@ -35,7 +35,8 @@ targets:
     settings:
       base:
         CODE_SIGN_ENTITLEMENTS: ScreenForge/Resources/ScreenForge.entitlements
-        PRODUCT_BUNDLE_IDENTIFIER: com.screenforge.macos
+        # Fresh ID: Tahoe Control Center can poison a bundle ID so Allow=ON but icon stays off-screen.
+        PRODUCT_BUNDLE_IDENTIFIER: app.screenforge.macos
         PRODUCT_NAME: ScreenForge
         INFOPLIST_FILE: ScreenForge/Resources/Info.plist
         GENERATE_INFOPLIST_FILE: NO
@@ -47,14 +48,14 @@ targets:
         INFOPLIST_KEY_CFBundleIconFile: AppIcon
         INFOPLIST_KEY_CFBundleIconName: AppIcon
         LD_RUNPATH_SEARCH_PATHS: "@executable_path/../Frameworks"
-        MARKETING_VERSION: "1.0.5"
-        CURRENT_PROJECT_VERSION: "1.0.5"
+        MARKETING_VERSION: "1.0.6"
+        CURRENT_PROJECT_VERSION: "1.0.6"
     info:
       path: ScreenForge/Resources/Info.plist
       properties:
         CFBundleName: ScreenForge
         CFBundleDisplayName: ScreenForge
-        CFBundleIdentifier: com.screenforge.macos
+        CFBundleIdentifier: app.screenforge.macos
         CFBundleShortVersionString: "$(MARKETING_VERSION)"
         CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
         CFBundleDevelopmentRegion: en

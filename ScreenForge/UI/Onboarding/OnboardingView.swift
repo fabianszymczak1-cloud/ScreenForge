@@ -33,11 +33,17 @@ struct OnboardingView: View {
                             permissions.openScreenRecordingSettings()
                         }
                         Button(String(localized: "Check again")) {
+                            Task { await permissions.refreshAsync() }
+                        }
+                        .disabled(permissions.isRefreshing)
+                        Button(String(localized: "Request permission")) {
                             permissions.requestScreenRecording()
                         }
                         .disabled(permissions.isRefreshing)
+                        Text(String(localized: "After granting in System Settings, use Check again. If macOS still requires a restart, use Relaunch."))
+                            .font(.callout)
+                            .foregroundStyle(.secondary)
                         if permissions.hasScreenRecording {
-                            Text(String(localized: "If macOS requires restarting the app after granting permission, use the button below."))
                             Button(String(localized: "Relaunch ScreenForge")) {
                                 permissions.restartApp()
                             }

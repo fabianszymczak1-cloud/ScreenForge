@@ -87,6 +87,7 @@ final class AppServices: ObservableObject {
     }
 
     func handleHotkey(_ action: HotkeyAction) async {
+        guard settings.hasCompletedOnboarding else { return }
         switch action {
         case .captureRegionEdit:
             await captureRegion(destination: .editor)

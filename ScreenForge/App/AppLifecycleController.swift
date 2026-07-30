@@ -13,7 +13,10 @@ final class AppLifecycleController {
         services.history.open()
         services.displays.refresh()
         services.menuBar.install()
-        services.hotkeys.registerAll()
+        // Hotkeys only after onboarding — prevents capture → permissions gate from killing the wizard.
+        if services.settings.hasCompletedOnboarding {
+            services.hotkeys.registerAll()
+        }
         Task {
             let granted = await services.permissions.refreshAsync()
             if !services.settings.hasCompletedOnboarding {
@@ -37,6 +40,12 @@ final class AppLifecycleController {
                 self?.services.displays.refresh()
             }
         }
+    }
+
+    /// Call when onboarding finishes so global shortcuts become active.
+    func registerHotkeysAfterOnboarding() {
+        guard services.settings.hasCompletedOnboarding else { return }
+        services.hotkeys.registerAll()
     }
 
     func prepareForTermination() {
