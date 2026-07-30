@@ -158,14 +158,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func isStatusItemOnScreen() -> Bool {
         guard let button = statusItem?.button, let window = button.window else { return false }
-        return window.screen != nil && window.frame.origin.y >= 0
+        let f = window.frame
+        // Tahoe briefly reports y=0 with height 0, then parks at y=-22.
+        return window.screen != nil && f.origin.y >= 0 && f.height >= 16 && f.width >= 8
     }
 
     private func scheduleMenuBarVisibilityCheck() {
         guard !isAutomatedRun else { return }
         menuBarVisibilityCheckTask?.cancel()
         menuBarVisibilityCheckTask = Task { @MainActor in
-            // Tahoe often parks the item at y=-22 shortly after creation — retry recreate.
             for attempt in 1...4 {
                 try? await Task.sleep(nanoseconds: 800_000_000)
                 guard !Task.isCancelled else { return }
@@ -181,9 +182,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 setupStatusItem()
             }
 
-            guard !isStatusItemOnScreen() else { return }
+            try? await Task.sleep(nanoseconds: 1_000_000_000)
+            guard !Task.isCancelled else { return }
+            if isStatusItemOnScreen() {
+                DiagnosticLog.shared.info("menubar.recovered")
+                return
+            }
 
-            // Last resort: show Dock so the app is not invisible, and guide Menu Bar settings.
             DiagnosticLog.shared.error("menubar.stillHidden — enabling Dock fallback")
             NSApp.setActivationPolicy(.regular)
             NSApp.activate(ignoringOtherApps: true)
