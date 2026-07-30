@@ -32,7 +32,10 @@ final class AppLifecycleController {
             Task { _ = await services.permissions.refreshAsync() }
         }
 
-        recoverAutosavesIfNeeded()
+        // Never block first-run welcome with recovery modal.
+        if services.settings.hasCompletedOnboarding {
+            recoverAutosavesIfNeeded()
+        }
         NotificationCenter.default.addObserver(
             forName: NSApplication.didChangeScreenParametersNotification,
             object: nil,

@@ -8,6 +8,14 @@ struct OnboardingView: View {
     @State private var step = 0
 
     private let lastStep = 5
+    private let resumeStepKey = "sf.onboardingResumeStep"
+
+    init(permissions: PermissionManager, onFinish: @escaping () -> Void) {
+        _permissions = ObservedObject(wrappedValue: permissions)
+        self.onFinish = onFinish
+        let resumed = UserDefaults.standard.integer(forKey: "sf.onboardingResumeStep")
+        _step = State(initialValue: max(0, min(resumed, 5)))
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
@@ -47,6 +55,7 @@ struct OnboardingView: View {
                             .foregroundStyle(.secondary)
                         if permissions.hasScreenRecording {
                             Button(String(localized: "Relaunch ScreenForge")) {
+                                UserDefaults.standard.set(step, forKey: resumeStepKey)
                                 permissions.restartApp()
                             }
                         }
@@ -124,6 +133,7 @@ struct OnboardingView: View {
                         if settings.launchAtLogin {
                             _ = launchAtLogin.applyPreference(true)
                         }
+                        UserDefaults.standard.removeObject(forKey: resumeStepKey)
                         settings.hasCompletedOnboarding = true
                         onFinish()
                     }

@@ -11,7 +11,9 @@ final class WindowSelectionCoordinator {
     private var highlightView: WindowHighlightView?
     private var continuation: CheckedContinuation<CaptureResult?, Never>?
     private var windows: [SCWindow] = []
-    private var monitor: Any?
+    private var localMonitor: Any?
+    private var globalMonitor: Any?
+    private var failsafeTask: Task<Void, Never>?
 
     init(capture: ScreenCaptureService, displays: DisplayTopologyService, settings: SettingsStore) {
         self.capture = capture
@@ -20,6 +22,10 @@ final class WindowSelectionCoordinator {
     }
 
     func beginSelection() async -> CaptureResult? {
+        if continuation != nil {
+            cancel()
+        }
+        NSApp.activate(ignoringOtherApps: true)
         do {
             windows = try await capture.provider.availableWindows().filter { win in
                 let bid = win.owningApplication?.bundleIdentifier
@@ -41,7 +47,7 @@ final class WindowSelectionCoordinator {
             let view = WindowHighlightView()
             view.onSelect = { [weak self] in self?.confirm() }
             view.onCancel = { [weak self] in self?.cancel() }
-            let window = NSWindow(
+            let window = RegionOverlayWindow(
                 contentRect: info.geometry.framePoints,
                 styleMask: .borderless,
                 backing: .buffered,
@@ -50,21 +56,41 @@ final class WindowSelectionCoordinator {
             window.setFrame(info.geometry.framePoints, display: false)
             window.isOpaque = false
             window.backgroundColor = .clear
-            window.level = .screenSaver
+            window.level = NSWindow.Level(Int(CGWindowLevelForKey(.statusWindow)) + 8)
             window.ignoresMouseEvents = false
-            window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
+            window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .ignoresCycle]
             window.contentView = view
             window.acceptsMouseMovedEvents = true
             window.orderFrontRegardless()
+            window.makeKeyAndOrderFront(nil)
             overlayWindows.append(window)
             highlightView = view
         }
-        monitor = NSEvent.addLocalMonitorForEvents(matching: [.mouseMoved, .leftMouseDown, .keyDown]) { [weak self] event in
+        localMonitor = NSEvent.addLocalMonitorForEvents(matching: [.mouseMoved, .leftMouseDown, .keyDown]) { [weak self] event in
             self?.handle(event)
+            if event.type == .keyDown && (event.keyCode == 53 || event.keyCode == 36 || event.keyCode == 76) {
+                return nil
+            }
             return event
         }
+        globalMonitor = NSEvent.addGlobalMonitorForEvents(matching: .keyDown) { [weak self] event in
+            if event.keyCode == 53 {
+                Task { @MainActor in self?.cancel() }
+            }
+        }
+        scheduleFailsafeCancel()
         NSApp.activate(ignoringOtherApps: true)
         updateHighlight()
+    }
+
+    private func scheduleFailsafeCancel() {
+        failsafeTask?.cancel()
+        failsafeTask = Task { @MainActor in
+            try? await Task.sleep(nanoseconds: 120_000_000_000)
+            guard !Task.isCancelled, continuation != nil else { return }
+            DiagnosticLog.shared.warn("window.selection.failsafeCancel")
+            cancel()
+        }
     }
 
     private func handle(_ event: NSEvent) {
@@ -98,11 +124,8 @@ final class WindowSelectionCoordinator {
 
     private var currentWindow: SCWindow?
 
-    private func convertFromScreen(_ rect: CGRect, to window: NSWindow) -> CGRect {
-        window.convertFromScreen(rect)
-    }
-
     private func confirm() {
+        guard continuation != nil else { return }
         guard let win = currentWindow else { cancel(); return }
         let includeShadow = settings.windowIncludeShadow
         let margin = settings.windowMargin
@@ -120,26 +143,23 @@ final class WindowSelectionCoordinator {
     }
 
     private func cancel() {
+        guard continuation != nil else { return }
         tearDown()
         continuation?.resume(returning: nil)
         continuation = nil
     }
 
     private func tearDown() {
-        if let monitor { NSEvent.removeMonitor(monitor) }
-        monitor = nil
+        failsafeTask?.cancel()
+        failsafeTask = nil
+        if let localMonitor { NSEvent.removeMonitor(localMonitor) }
+        localMonitor = nil
+        if let globalMonitor { NSEvent.removeMonitor(globalMonitor) }
+        globalMonitor = nil
         overlayWindows.forEach { $0.close() }
         overlayWindows = []
         highlightView = nil
         windows = []
-    }
-}
-
-private extension NSWindow {
-    func convertFromScreen(_ rect: CGRect) -> CGRect {
-        let origin = convertPoint(fromScreen: rect.origin)
-        // frame is in screen coords bottom-left; content view uses bottom-left
-        return CGRect(x: origin.x, y: origin.y, width: rect.width, height: rect.height)
     }
 }
 
@@ -155,8 +175,6 @@ final class WindowHighlightView: NSView {
         NSColor.black.withAlphaComponent(0.25).setFill()
         bounds.fill()
         if let frame = highlightedFrame {
-            NSColor.clear.setFill()
-            // punch hole visually by not filling
             NSColor.systemTeal.setStroke()
             let path = NSBezierPath(rect: frame)
             path.lineWidth = 3

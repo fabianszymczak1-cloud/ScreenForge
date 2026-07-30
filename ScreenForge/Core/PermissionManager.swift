@@ -128,6 +128,8 @@ final class PermissionManager: NSObject, ObservableObject, NSWindowDelegate {
         window.center()
         window.isReleasedWhenClosed = false
         window.delegate = self
+        // Bring welcome above any leftover capture UI after relaunch.
+        window.level = .floating
         window.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
         onboardingWindow = window

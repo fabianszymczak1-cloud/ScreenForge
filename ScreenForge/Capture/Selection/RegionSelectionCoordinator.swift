@@ -13,7 +13,9 @@ final class RegionSelectionCoordinator: RegionSelectionViewDelegate {
     private var frozen: [CGDirectDisplayID: CGImage] = [:]
     private var continuation: CheckedContinuation<CaptureResult?, Never>?
     private var previousApp: NSRunningApplication?
-    private var keyMonitor: Any?
+    private var localKeyMonitor: Any?
+    private var globalKeyMonitor: Any?
+    private var failsafeTask: Task<Void, Never>?
 
     init(capture: ScreenCaptureService, displays: DisplayTopologyService, coordinates: CoordinateConverter, settings: SettingsStore, lastRegion: LastRegionStore) {
         self.capture = capture
@@ -24,15 +26,25 @@ final class RegionSelectionCoordinator: RegionSelectionViewDelegate {
     }
 
     func beginSelection() async -> CaptureResult? {
+        // Never stack overlays — re-entry used to leave undismissable .screenSaver windows.
+        if continuation != nil {
+            regionSelectionDidCancel()
+        }
+
         previousApp = NSWorkspace.shared.frontmostApplication
         PerformanceMonitor.shared.begin("region.overlay")
         displays.refresh()
+
+        // Become active BEFORE covering the desktop so Esc can reach us.
+        NSApp.activate(ignoringOtherApps: true)
+
         do {
             frozen = try await capture.freezeAllDisplays(excludeWindowIDs: capture.ownWindowIDs())
         } catch {
             AppServices.shared.notifications.showError(error.localizedDescription)
             return nil
         }
+
         return await withCheckedContinuation { cont in
             self.continuation = cont
             self.overlays = displays.displays.compactMap { info in
@@ -41,11 +53,16 @@ final class RegionSelectionCoordinator: RegionSelectionViewDelegate {
                 oc.selectionView.delegate = self
                 return oc
             }
+            if self.overlays.isEmpty {
+                self.continuation = nil
+                cont.resume(returning: nil)
+                return
+            }
             overlays.forEach { $0.show() }
-            installKeyMonitor()
+            installKeyMonitors()
+            scheduleFailsafeCancel()
             _ = PerformanceMonitor.shared.end("region.overlay")
             NSApp.activate(ignoringOtherApps: true)
-            // Prefer overlay under the cursor as key
             let mouse = NSEvent.mouseLocation
             if let preferred = overlays.first(where: { $0.displayInfo.geometry.framePoints.contains(mouse) })
                 ?? overlays.first {
@@ -55,29 +72,55 @@ final class RegionSelectionCoordinator: RegionSelectionViewDelegate {
         }
     }
 
-    private func installKeyMonitor() {
-        removeKeyMonitor()
-        keyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
+    private func installKeyMonitors() {
+        removeKeyMonitors()
+        localKeyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
             guard let self else { return event }
-            switch event.keyCode {
-            case 53: // Escape — leave region selection entirely
-                self.regionSelectionDidCancel()
-                return nil
-            case 36, 76: // Return — confirm if there is a selection on the key overlay
-                if let oc = self.overlays.first(where: { $0.window?.isKeyWindow == true }) ?? self.overlays.first {
-                    oc.selectionView.confirmIfPossible()
-                }
-                return nil
-            default:
-                return event
+            return self.handleKey(event)
+        }
+        // Global monitor: accessory apps often lose key focus under fullscreen overlays.
+        // Observe-only — still lets us cancel when Esc would otherwise be swallowed.
+        globalKeyMonitor = NSEvent.addGlobalMonitorForEvents(matching: .keyDown) { [weak self] event in
+            guard let self else { return }
+            if event.keyCode == 53 {
+                Task { @MainActor in self.regionSelectionDidCancel() }
             }
         }
     }
 
-    private func removeKeyMonitor() {
-        if let keyMonitor {
-            NSEvent.removeMonitor(keyMonitor)
-            self.keyMonitor = nil
+    private func handleKey(_ event: NSEvent) -> NSEvent? {
+        switch event.keyCode {
+        case 53:
+            regionSelectionDidCancel()
+            return nil
+        case 36, 76:
+            if let oc = overlays.first(where: { $0.window?.isKeyWindow == true }) ?? overlays.first {
+                oc.selectionView.confirmIfPossible()
+            }
+            return nil
+        default:
+            return event
+        }
+    }
+
+    private func removeKeyMonitors() {
+        if let localKeyMonitor {
+            NSEvent.removeMonitor(localKeyMonitor)
+            self.localKeyMonitor = nil
+        }
+        if let globalKeyMonitor {
+            NSEvent.removeMonitor(globalKeyMonitor)
+            self.globalKeyMonitor = nil
+        }
+    }
+
+    private func scheduleFailsafeCancel() {
+        failsafeTask?.cancel()
+        failsafeTask = Task { @MainActor in
+            try? await Task.sleep(nanoseconds: 120_000_000_000) // 2 minutes
+            guard !Task.isCancelled, continuation != nil else { return }
+            DiagnosticLog.shared.warn("region.selection.failsafeCancel")
+            regionSelectionDidCancel()
         }
     }
 
@@ -88,7 +131,6 @@ final class RegionSelectionCoordinator: RegionSelectionViewDelegate {
         }
         do {
             var result = try await capture.captureRegionPixels(resolved.pixelRect, displayID: resolved.displayID)
-            // Mark as lastRegion kind
             result = CaptureResult(
                 image: result.image,
                 kind: .lastRegion,
@@ -148,7 +190,9 @@ final class RegionSelectionCoordinator: RegionSelectionViewDelegate {
     }
 
     private func tearDown() {
-        removeKeyMonitor()
+        failsafeTask?.cancel()
+        failsafeTask = nil
+        removeKeyMonitors()
         overlays.forEach { $0.close() }
         overlays = []
         frozen = [:]

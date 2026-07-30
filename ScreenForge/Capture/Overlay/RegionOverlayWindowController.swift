@@ -27,7 +27,8 @@ final class RegionOverlayWindowController: NSWindowController {
         window.setFrame(displayInfo.geometry.framePoints, display: false)
         window.isOpaque = false
         window.backgroundColor = .clear
-        window.level = .screenSaver
+        // Below Mission Control / Force Quit — .screenSaver can lock an accessory app's Esc path.
+        window.level = NSWindow.Level(Int(CGWindowLevelForKey(.statusWindow)) + 8)
         window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .ignoresCycle]
         window.ignoresMouseEvents = false
         window.hasShadow = false

@@ -25,17 +25,48 @@ final class MenuBarController: NSObject {
         AppDelegate.shared?.applyMenuBarIconPreference()
     }
 
-    @objc func captureRegion() { Task { await services.captureRegion(destination: .editor) } }
-    @objc func captureWindow() { Task { await services.captureWindow(destination: .editor) } }
-    @objc func captureDisplay() { Task { await services.captureActiveDisplay(destination: .editor) } }
-    @objc func captureAll() { Task { await services.captureAllDisplays(destination: .editor) } }
-    @objc func captureLast() { Task { await services.captureLastRegion(destination: .editor) } }
+    @objc func captureRegion() {
+        guard services.settings.hasCompletedOnboarding else {
+            services.permissions.presentOnboarding(); return
+        }
+        Task { await services.captureRegion(destination: .editor) }
+    }
+    @objc func captureWindow() {
+        guard services.settings.hasCompletedOnboarding else {
+            services.permissions.presentOnboarding(); return
+        }
+        Task { await services.captureWindow(destination: .editor) }
+    }
+    @objc func captureDisplay() {
+        guard services.settings.hasCompletedOnboarding else {
+            services.permissions.presentOnboarding(); return
+        }
+        Task { await services.captureActiveDisplay(destination: .editor) }
+    }
+    @objc func captureAll() {
+        guard services.settings.hasCompletedOnboarding else {
+            services.permissions.presentOnboarding(); return
+        }
+        Task { await services.captureAllDisplays(destination: .editor) }
+    }
+    @objc func captureLast() {
+        guard services.settings.hasCompletedOnboarding else {
+            services.permissions.presentOnboarding(); return
+        }
+        Task { await services.captureLastRegion(destination: .editor) }
+    }
     @objc func captureDelayed() {
+        guard services.settings.hasCompletedOnboarding else {
+            services.permissions.presentOnboarding(); return
+        }
         services.delayedCapture.start(seconds: services.settings.defaultDelaySeconds) { [weak self] in
             Task { await self?.services.captureRegion(destination: .editor) }
         }
     }
     @objc func captureScrolling() {
+        guard services.settings.hasCompletedOnboarding else {
+            services.permissions.presentOnboarding(); return
+        }
         Task { _ = await services.scrolling.captureScrollingRegion() }
     }
     @objc func showHistory() {
