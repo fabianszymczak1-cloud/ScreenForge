@@ -53,7 +53,7 @@ final class SettingsStore: ObservableObject {
     @Published var showMenuBarIcon: Bool {
         didSet {
             d.set(showMenuBarIcon, forKey: prefix + "menubar")
-            NotificationCenter.default.post(name: .screenForgeMenuBarPreferenceChanged, object: nil)
+            AppDelegate.shared?.applyMenuBarIconPreference()
         }
     }
     /// Desired launch-at-login preference (persisted). Actual SMAppService state may lag
@@ -212,7 +212,9 @@ final class SettingsStore: ObservableObject {
         func s(_ k: String, _ def: String) -> String { defaults.string(forKey: p + k) ?? def }
 
         hasCompletedOnboarding = b("onboarding", false)
-        showDockIcon = b("dock", false)
+        // LSUIElement app — never leave a persisted dock preference from docs/tools.
+        showDockIcon = false
+        d.set(false, forKey: p + "dock")
         showMenuBarIcon = b("menubar", true)
         launchAtLogin = b("launchAtLogin", false)
         theme = AppTheme(rawValue: s("theme", "system")) ?? .system

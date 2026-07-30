@@ -14,7 +14,7 @@ final class MenuBarController: NSObject {
     }
 
     func install() {
-        AppDelegate.shared?.applyMenuBarIconPreference()
+        // Status item is owned by AppDelegate (created at launch, PasteRush-style).
     }
 
     func applyMenuBarIconVisibility() {

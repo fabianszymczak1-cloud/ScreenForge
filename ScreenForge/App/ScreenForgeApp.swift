@@ -18,24 +18,26 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     static weak var shared: AppDelegate?
 
     private var lifecycle: AppLifecycleController?
-    /// Strong ref — must outlive the status bar (PasteRush pattern).
+    /// Strong ref — exact PasteRush pattern; must outlive the status bar.
     private var statusItem: NSStatusItem?
-    private var menuBarObserver: NSObjectProtocol?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         Self.shared = self
         PerformanceMonitor.shared.log("app.launch")
         let services = AppServices.shared
-        NSApp.setActivationPolicy(.accessory)
-        applyMenuBarIconPreference()
 
-        menuBarObserver = NotificationCenter.default.addObserver(
-            forName: .screenForgeMenuBarPreferenceChanged,
-            object: nil,
-            queue: .main
-        ) { [weak self] _ in
-            Task { @MainActor in self?.applyMenuBarIconPreference() }
+        // PasteRush order: accessory → status item → everything else.
+        NSApp.setActivationPolicy(.accessory)
+
+        // Menu-bar-only app: never keep a persisted dock preference.
+        if services.settings.showDockIcon {
+            services.settings.showDockIcon = false
         }
+        if !services.settings.showMenuBarIcon {
+            services.settings.showMenuBarIcon = true
+        }
+
+        setupStatusItem()
 
         if services.settings.launchAtLogin {
             _ = services.launchAtLogin.applyPreference(true)
@@ -43,11 +45,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         lifecycle = AppLifecycleController(services: services)
         lifecycle?.start()
-
-        // Re-assert after lifecycle (onboarding / permission windows can race status item on Tahoe).
-        DispatchQueue.main.async { [weak self] in
-            self?.applyMenuBarIconPreference()
-        }
 
         if ProcessInfo.processInfo.arguments.contains("--smoke-test") {
             services.settings.hasCompletedOnboarding = true
@@ -64,17 +61,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
+    /// Settings toggle: show/hide. Launch always calls `setupStatusItem()` directly.
     func applyMenuBarIconPreference() {
-        let show = AppServices.shared.settings.showMenuBarIcon
-        if show {
+        if AppServices.shared.settings.showMenuBarIcon {
             if statusItem == nil {
-                setupStatusItem(services: AppServices.shared)
-            }
-            statusItem?.isVisible = true
-            // Tahoe sometimes drops the image after activation-policy churn.
-            if statusItem?.button?.image == nil {
-                statusItem?.button?.image = Self.statusImage()
-                statusItem?.button?.image?.isTemplate = true
+                setupStatusItem()
             }
         } else if let item = statusItem {
             NSStatusBar.system.removeStatusItem(item)
@@ -82,33 +73,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
-    private static func statusImage() -> NSImage? {
-        if let img = NSImage(systemSymbolName: "camera.viewfinder", accessibilityDescription: "ScreenForge") {
-            return img
-        }
-        // Fallback if SF Symbol missing
-        let size = NSSize(width: 18, height: 18)
-        let img = NSImage(size: size)
-        img.lockFocus()
-        NSColor.labelColor.setStroke()
-        let path = NSBezierPath(ovalIn: NSRect(x: 2, y: 2, width: 14, height: 14))
-        path.lineWidth = 1.5
-        path.stroke()
-        img.unlockFocus()
-        img.isTemplate = true
-        return img
-    }
-
-    private func setupStatusItem(services: AppServices) {
-        let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
-        if let button = item.button {
-            button.image = Self.statusImage()
+    /// Mirror PasteRushApp.setupStatusItem() as closely as possible.
+    private func setupStatusItem() {
+        statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
+        if let button = statusItem?.button {
+            button.image = NSImage(systemSymbolName: "camera.viewfinder", accessibilityDescription: "ScreenForge")
             button.image?.isTemplate = true
             button.toolTip = "ScreenForge"
         }
-        item.menu = buildMenu(services: services)
-        item.isVisible = true
-        statusItem = item
+        statusItem?.menu = buildMenu(services: AppServices.shared)
     }
 
     private func buildMenu(services: AppServices) -> NSMenu {
@@ -153,22 +126,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationWillTerminate(_ notification: Notification) {
-        if let observer = menuBarObserver {
-            NotificationCenter.default.removeObserver(observer)
-        }
         lifecycle?.prepareForTermination()
     }
 
     func applicationSupportsSecureRestorableState(_ app: NSApplication) -> Bool {
         true
-    }
-
-    /// After editor / settings windows, keep accessory + status item alive.
-    func applicationDidBecomeActive(_ notification: Notification) {
-        if NSApp.activationPolicy() != .accessory {
-            NSApp.setActivationPolicy(.accessory)
-        }
-        applyMenuBarIconPreference()
     }
 }
 
