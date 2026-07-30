@@ -14,14 +14,16 @@ final class MenuBarController: NSObject {
     }
 
     func install() {
-        // Icon is provided by MenuBarExtra in ScreenForgeApp.
+        AppDelegate.shared?.applyMenuBarIconPreference()
     }
 
     func applyMenuBarIconVisibility() {
-        // Visibility is bound to settings.showMenuBarIcon via MenuBarExtra(isInserted:).
+        AppDelegate.shared?.applyMenuBarIconPreference()
     }
 
-    func rebuildMenu() {}
+    func rebuildMenu() {
+        AppDelegate.shared?.applyMenuBarIconPreference()
+    }
 
     @objc func captureRegion() { Task { await services.captureRegion(destination: .editor) } }
     @objc func captureWindow() { Task { await services.captureWindow(destination: .editor) } }

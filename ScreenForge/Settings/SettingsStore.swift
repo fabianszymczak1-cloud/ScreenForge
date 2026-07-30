@@ -51,7 +51,10 @@ final class SettingsStore: ObservableObject {
         }
     }
     @Published var showMenuBarIcon: Bool {
-        didSet { d.set(showMenuBarIcon, forKey: prefix + "menubar") }
+        didSet {
+            d.set(showMenuBarIcon, forKey: prefix + "menubar")
+            NotificationCenter.default.post(name: .screenForgeMenuBarPreferenceChanged, object: nil)
+        }
     }
     /// Desired launch-at-login preference (persisted). Actual SMAppService state may lag
     /// until the user approves Login Items in System Settings.

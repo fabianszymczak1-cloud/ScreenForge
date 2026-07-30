@@ -237,18 +237,30 @@ final class CanvasRenderer {
     }
 
     private func drawStep(_ obj: CanvasObject, cgFrame: CGRect, in ctx: CGContext) {
-        ctx.setFillColor(obj.style.fillColor.cgColor)
-        ctx.fillEllipse(in: cgFrame)
-        ctx.setStrokeColor(obj.style.strokeColor.cgColor)
-        ctx.setLineWidth(2)
-        ctx.strokeEllipse(in: cgFrame)
+        // Always draw a circle from the shorter side so stretched frames don't become squares.
+        let side = min(cgFrame.width, cgFrame.height)
+        let circle = CGRect(
+            x: cgFrame.midX - side / 2,
+            y: cgFrame.midY - side / 2,
+            width: side,
+            height: side
+        )
+        let fill = obj.style.fillColor.alphaComponent > 0.05 ? obj.style.fillColor : NSColor.systemRed
+        ctx.setFillColor(fill.cgColor)
+        ctx.fillEllipse(in: circle)
+        ctx.setStrokeColor(NSColor.white.cgColor)
+        ctx.setLineWidth(max(2, min(3, side * 0.08)))
+        ctx.strokeEllipse(in: circle)
         let label = obj.text ?? "\(obj.numberValue ?? 1)"
-        let font = NSFont.boldSystemFont(ofSize: min(cgFrame.width, cgFrame.height) * 0.45)
-        let attrs: [NSAttributedString.Key: Any] = [.font: font, .foregroundColor: obj.style.textColor]
+        let font = NSFont.boldSystemFont(ofSize: max(11, side * 0.45))
+        let attrs: [NSAttributedString.Key: Any] = [
+            .font: font,
+            .foregroundColor: obj.style.textColor.alphaComponent > 0.05 ? obj.style.textColor : NSColor.white,
+        ]
         let ns = label as NSString
         let size = ns.size(withAttributes: attrs)
         ctx.saveGState()
-        ctx.translateBy(x: cgFrame.midX - size.width / 2, y: cgFrame.midY + size.height / 2)
+        ctx.translateBy(x: circle.midX - size.width / 2, y: circle.midY + size.height / 2)
         ctx.scaleBy(x: 1, y: -1)
         NSGraphicsContext.saveGraphicsState()
         NSGraphicsContext.current = NSGraphicsContext(cgContext: ctx, flipped: true)

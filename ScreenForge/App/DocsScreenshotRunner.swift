@@ -46,7 +46,7 @@ enum DocsScreenshotRunner {
         UserDefaults.standard.synchronize()
 
         services.settings.hasCompletedOnboarding = true
-        services.settings.showDockIcon = true
+        // Do not persist showDockIcon — only flip activation for window captures.
         NSApp.setActivationPolicy(.regular)
         NSApp.activate(ignoringOtherApps: true)
 

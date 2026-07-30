@@ -90,6 +90,21 @@ final class CanvasView: NSView {
                 path.stroke()
                 drawHandle(at: a)
                 drawHandle(at: b)
+            } else if Self.isBadgeObject(obj.type) {
+                // Circular chrome — square handle grids look awful on step numbers.
+                let r = docToView(obj.frame)
+                let side = min(r.width, r.height)
+                let circle = NSRect(
+                    x: r.midX - side / 2,
+                    y: r.midY - side / 2,
+                    width: side,
+                    height: side
+                ).insetBy(dx: -3, dy: -3)
+                NSColor.systemTeal.setStroke()
+                let path = NSBezierPath(ovalIn: circle)
+                path.lineWidth = 2
+                path.stroke()
+                drawHandle(at: CGPoint(x: circle.midX + side / 2 + 3, y: circle.midY))
             } else {
                 let r = docToView(obj.frame)
                 NSColor.systemTeal.setStroke()
@@ -123,6 +138,10 @@ final class CanvasView: NSView {
             path.lineWidth = 1
             path.stroke()
         }
+    }
+
+    private static func isBadgeObject(_ type: CanvasObjectType) -> Bool {
+        [.step, .warning, .checkmark, .crossmark].contains(type)
     }
 
     private static func normalizedRect(from a: CGPoint, to b: CGPoint) -> CGRect {
@@ -159,6 +178,15 @@ final class CanvasView: NSView {
                 let b = docToView(CGRect(origin: pts[pts.count - 1], size: .zero)).origin
                 if hypot(viewP.x - a.x, viewP.y - a.y) <= hitRadius { return (obj.id, .lineStart) }
                 if hypot(viewP.x - b.x, viewP.y - b.y) <= hitRadius { return (obj.id, .lineEnd) }
+                continue
+            }
+            if Self.isBadgeObject(obj.type) {
+                let r = docToView(obj.frame)
+                let side = min(r.width, r.height)
+                let handle = CGPoint(x: r.midX + side / 2 + 3, y: r.midY)
+                if hypot(viewP.x - handle.x, viewP.y - handle.y) <= hitRadius {
+                    return (obj.id, .e)
+                }
                 continue
             }
             let r = docToView(obj.frame)
@@ -349,11 +377,22 @@ final class CanvasView: NSView {
         } else if tool == .step {
             let style = document.style(for: .step)
             let size: CGFloat = 36
-            var obj = CanvasObject(type: .step, frame: CGRect(x: docP.x - size/2, y: docP.y - size/2, width: size, height: size), style: style)
+            var obj = CanvasObject(
+                type: .step,
+                frame: CGRect(x: docP.x - size / 2, y: docP.y - size / 2, width: size, height: size),
+                style: style
+            )
+            // Hard badge look — ignore accidental thin/clear fills from shared presets.
+            obj.style.fillColor = style.fillColor.alphaComponent > 0.05 ? style.fillColor : .systemRed
+            obj.style.strokeColor = .white
+            obj.style.textColor = .white
+            obj.style.strokeWidth = 2
             obj.numberValue = document.nextStepNumber
             obj.text = "\(document.nextStepNumber)"
             document.nextStepNumber += 1
             document.addObject(obj)
+            // Stamp tool: leave unselected so the canvas isn't covered in handle squares.
+            document.selection = []
             onChange?()
             needsDisplay = true
         } else if [.warning, .checkmark, .crossmark].contains(tool), let type = tool.objectType {
@@ -411,9 +450,9 @@ final class CanvasView: NSView {
             panStart = p
             return
         }
-        if let id = resizingID, activeResizeHandle != .none,
+            if let id = resizingID, activeResizeHandle != .none,
            let i = document.objects.firstIndex(where: { $0.id == id }) {
-            let lockAspect = event.modifierFlags.contains(.shift)
+            let lockAspect = event.modifierFlags.contains(.shift) || Self.isBadgeObject(document.objects[i].type)
             if activeResizeHandle == .lineStart || activeResizeHandle == .lineEnd {
                 var pts = resizeOriginPoints ?? document.objects[i].points ?? []
                 guard pts.count >= 2 else { return }
