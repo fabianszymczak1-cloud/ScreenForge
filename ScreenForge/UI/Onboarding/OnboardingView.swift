@@ -7,6 +7,8 @@ struct OnboardingView: View {
     var onFinish: () -> Void
     @State private var step = 0
 
+    private let lastStep = 5
+
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
             Text("ScreenForge").font(.largeTitle.bold())
@@ -50,8 +52,21 @@ struct OnboardingView: View {
                         }
                     }
                 case 2:
-                    Text(String(localized: "Region capture shortcut: ⌃⇧1 — select an area to open the editor."))
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text(String(localized: "Allow ScreenForge in Menu Bar so the camera icon stays visible."))
+                        Text(String(localized: "macOS 26 keeps menu bar apps behind System Settings → Menu Bar. Turn ScreenForge on, then come back."))
+                            .font(.callout)
+                            .foregroundStyle(.secondary)
+                        Button(String(localized: "Open Menu Bar settings")) {
+                            permissions.openMenuBarSettings()
+                        }
+                        Text(String(localized: "After enabling, look for the camera.viewfinder icon next to other menu bar apps. If it is missing, toggle ScreenForge off and on once."))
+                            .font(.callout)
+                            .foregroundStyle(.secondary)
+                    }
                 case 3:
+                    Text(String(localized: "Region capture shortcut: ⌃⇧1 — select an area to open the editor."))
+                case 4:
                     Text(String(localized: "Quick copy: ⌃⌥1 — select a region; the image goes straight to the clipboard."))
                 default:
                     VStack(alignment: .leading, spacing: 16) {
@@ -98,7 +113,7 @@ struct OnboardingView: View {
                     Button(String(localized: "Back")) { step -= 1 }
                 }
                 Spacer()
-                if step < 4 {
+                if step < lastStep {
                     Button(String(localized: "Continue")) {
                         Task { await permissions.refreshAsync() }
                         step += 1
@@ -117,7 +132,7 @@ struct OnboardingView: View {
             }
         }
         .padding(28)
-        .frame(width: 520, height: 440)
+        .frame(width: 520, height: 480)
         .task {
             await permissions.refreshAsync()
             launchAtLogin.refresh()

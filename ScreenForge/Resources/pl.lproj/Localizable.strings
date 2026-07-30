@@ -115,6 +115,9 @@
 "Menu bar icon is hidden" = "Ikona w pasku menu jest ukryta";
 "macOS may be blocking ScreenForge in System Settings → Menu Bar. Set ScreenForge to Allow, then relaunch the app." = "macOS może blokować ScreenForge w Ustawieniach systemowych → Pasek menu. Ustaw ScreenForge na Zezwalaj, a potem uruchom aplikację ponownie.";
 "Open Menu Bar settings" = "Otwórz ustawienia paska menu";
+"Allow ScreenForge in Menu Bar so the camera icon stays visible." = "Zezwól ScreenForge w Pasku menu, żeby ikona aparatu była widoczna.";
+"macOS 26 keeps menu bar apps behind System Settings → Menu Bar. Turn ScreenForge on, then come back." = "macOS 26 trzyma aplikacje paska menu w Ustawieniach systemowych → Pasek menu. Włącz ScreenForge i wróć tutaj.";
+"After enabling, look for the camera.viewfinder icon next to other menu bar apps. If it is missing, toggle ScreenForge off and on once." = "Po włączeniu szukaj ikony aparatu obok innych pozycji w pasku. Jeśli jej nie ma, wyłącz i włącz ScreenForge raz.";
 "Later" = "Później";
 "Name" = "Nazwa";
 "No limit" = "Bez limitu";

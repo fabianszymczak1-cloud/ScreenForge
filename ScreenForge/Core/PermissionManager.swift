@@ -62,6 +62,19 @@ final class PermissionManager: NSObject, ObservableObject, NSWindowDelegate {
         }
     }
 
+    func openMenuBarSettings() {
+        let urls = [
+            "x-apple.systempreferences:com.apple.ControlCenter-Settings.extension",
+            "x-apple.systempreferences:com.apple.preference.dock?menuBar"
+        ]
+        for s in urls {
+            if let url = URL(string: s) {
+                NSWorkspace.shared.open(url)
+                return
+            }
+        }
+    }
+
     func requestAccessibility() {
         let opts = ["AXTrustedCheckOptionPrompt": true] as CFDictionary
         _ = AXIsProcessTrustedWithOptions(opts)
@@ -111,7 +124,7 @@ final class PermissionManager: NSObject, ObservableObject, NSWindowDelegate {
         let window = NSWindow(contentViewController: hosting)
         window.title = "ScreenForge"
         window.styleMask = [.titled, .closable]
-        window.setContentSize(NSSize(width: 520, height: 440))
+        window.setContentSize(NSSize(width: 520, height: 480))
         window.center()
         window.isReleasedWhenClosed = false
         window.delegate = self

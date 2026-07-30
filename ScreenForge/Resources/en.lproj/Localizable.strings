@@ -115,6 +115,9 @@
 "Menu bar icon is hidden" = "Menu bar icon is hidden";
 "macOS may be blocking ScreenForge in System Settings → Menu Bar. Set ScreenForge to Allow, then relaunch the app." = "macOS may be blocking ScreenForge in System Settings → Menu Bar. Set ScreenForge to Allow, then relaunch the app.";
 "Open Menu Bar settings" = "Open Menu Bar settings";
+"Allow ScreenForge in Menu Bar so the camera icon stays visible." = "Allow ScreenForge in Menu Bar so the camera icon stays visible.";
+"macOS 26 keeps menu bar apps behind System Settings → Menu Bar. Turn ScreenForge on, then come back." = "macOS 26 keeps menu bar apps behind System Settings → Menu Bar. Turn ScreenForge on, then come back.";
+"After enabling, look for the camera.viewfinder icon next to other menu bar apps. If it is missing, toggle ScreenForge off and on once." = "After enabling, look for the camera.viewfinder icon next to other menu bar apps. If it is missing, toggle ScreenForge off and on once.";
 "Later" = "Later";
 "Name" = "Name";
 "No limit" = "No limit";
