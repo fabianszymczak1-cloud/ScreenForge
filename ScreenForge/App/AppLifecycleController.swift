@@ -14,9 +14,8 @@ final class AppLifecycleController {
         services.displays.refresh()
         services.menuBar.install()
 
-        // Resume flag means user relaunched mid-wizard — never skip welcome.
-        let resumeStep = UserDefaults.standard.object(forKey: "sf.onboardingResumeStep") != nil
-        if resumeStep {
+        // macOS force-quits after Screen Recording grant — restore flag must reopen welcome.
+        if PermissionManager.shouldRestoreOnboardingAfterTCC {
             services.settings.hasCompletedOnboarding = false
         }
 
@@ -34,7 +33,6 @@ final class AppLifecycleController {
             }
             recoverAutosavesIfNeeded()
         } else {
-            // Defer so the accessory app finishes activating; immediate present can no-op after relaunch.
             DispatchQueue.main.async {
                 self.services.permissions.presentOnboarding()
             }
@@ -56,7 +54,6 @@ final class AppLifecycleController {
         }
     }
 
-    /// Call when onboarding finishes so global shortcuts become active.
     func registerHotkeysAfterOnboarding() {
         guard services.settings.hasCompletedOnboarding else { return }
         services.hotkeys.registerAll()

@@ -282,6 +282,7 @@ final class SettingsStore: ObservableObject {
         let skipKeys: Set<String> = [
             "sf.onboarding",
             "sf.onboardingResumeStep",
+            "sf.restoreOnboardingAfterTCC",
             "sf.prefsMigratedToAppScreenforge"
         ]
         if needsSeed {

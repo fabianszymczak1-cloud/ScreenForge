@@ -8,12 +8,11 @@ struct OnboardingView: View {
     @State private var step = 0
 
     private let lastStep = 5
-    private let resumeStepKey = "sf.onboardingResumeStep"
 
     init(permissions: PermissionManager, onFinish: @escaping () -> Void) {
         _permissions = ObservedObject(wrappedValue: permissions)
         self.onFinish = onFinish
-        let resumed = UserDefaults.standard.integer(forKey: "sf.onboardingResumeStep")
+        let resumed = UserDefaults.standard.integer(forKey: PermissionManager.onboardingResumeStepKey)
         _step = State(initialValue: max(0, min(resumed, 5)))
     }
 
@@ -50,15 +49,16 @@ struct OnboardingView: View {
                             permissions.requestScreenRecording()
                         }
                         .disabled(permissions.isRefreshing)
-                        Text(String(localized: "After granting in System Settings, use Check again. If macOS still requires a restart, use Relaunch."))
+                        Text(String(localized: "After granting in System Settings, use Check again. macOS may quit the app — reopen ScreenForge and this screen returns automatically."))
                             .font(.callout)
                             .foregroundStyle(.secondary)
                         if permissions.hasScreenRecording {
+                            Text(String(localized: "Permission is on. Continue, or relaunch if capture still fails."))
+                                .font(.callout)
+                                .foregroundStyle(.secondary)
                             Button(String(localized: "Relaunch ScreenForge")) {
-                                // Keep wizard incomplete and remember step across relaunch.
                                 settings.hasCompletedOnboarding = false
-                                UserDefaults.standard.set(step, forKey: resumeStepKey)
-                                UserDefaults.standard.synchronize()
+                                permissions.markRestoreOnboardingAfterTCC(resumeStep: step)
                                 permissions.restartApp()
                             }
                         }
@@ -136,7 +136,8 @@ struct OnboardingView: View {
                         if settings.launchAtLogin {
                             _ = launchAtLogin.applyPreference(true)
                         }
-                        UserDefaults.standard.removeObject(forKey: resumeStepKey)
+                        UserDefaults.standard.removeObject(forKey: PermissionManager.onboardingResumeStepKey)
+                        permissions.clearRestoreOnboardingAfterTCC()
                         settings.hasCompletedOnboarding = true
                         onFinish()
                     }

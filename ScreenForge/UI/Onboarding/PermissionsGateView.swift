@@ -35,11 +35,15 @@ struct PermissionsGateView: View {
             }
             .disabled(permissions.isRefreshing)
 
-            Text(String(localized: "After granting in System Settings, use Check again. If macOS still requires a restart, use Relaunch."))
+            Text(String(localized: "After granting in System Settings, use Check again. macOS may quit the app — reopen ScreenForge and this screen returns automatically."))
                 .font(.callout)
                 .foregroundStyle(.secondary)
             if permissions.hasScreenRecording {
+                Text(String(localized: "Permission is on. Continue, or relaunch if capture still fails."))
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
                 Button(String(localized: "Relaunch ScreenForge")) {
+                    permissions.markRestoreOnboardingAfterTCC()
                     permissions.restartApp()
                 }
             }

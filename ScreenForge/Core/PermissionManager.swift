@@ -4,11 +4,34 @@ import SwiftUI
 
 @MainActor
 final class PermissionManager: NSObject, ObservableObject, NSWindowDelegate {
+    static let restoreOnboardingAfterTCCKey = "sf.restoreOnboardingAfterTCC"
+    static let onboardingResumeStepKey = "sf.onboardingResumeStep"
+
     @Published private(set) var hasScreenRecording = false
     @Published private(set) var hasAccessibility = false
     @Published private(set) var isRefreshing = false
     private var onboardingWindow: NSWindow?
     private var permissionsWindow: NSWindow?
+
+    /// Persist before TCC can force-quit the process (Screen Recording grant).
+    func markRestoreOnboardingAfterTCC(resumeStep: Int? = nil) {
+        let d = UserDefaults.standard
+        d.set(true, forKey: Self.restoreOnboardingAfterTCCKey)
+        AppServices.shared.settings.hasCompletedOnboarding = false
+        if let resumeStep {
+            d.set(resumeStep, forKey: Self.onboardingResumeStepKey)
+        }
+        d.synchronize()
+    }
+
+    func clearRestoreOnboardingAfterTCC() {
+        UserDefaults.standard.removeObject(forKey: Self.restoreOnboardingAfterTCCKey)
+    }
+
+    static var shouldRestoreOnboardingAfterTCC: Bool {
+        UserDefaults.standard.bool(forKey: restoreOnboardingAfterTCCKey)
+            || UserDefaults.standard.object(forKey: onboardingResumeStepKey) != nil
+    }
 
     func refresh() {
         Task { await refreshAsync() }
@@ -25,7 +48,6 @@ final class PermissionManager: NSObject, ObservableObject, NSWindowDelegate {
         // disrupt menu-bar hosting on macOS Tahoe — never call it on launch.
         var granted = CGPreflightScreenCaptureAccess()
         if !granted {
-            // Brief retry for TCC lag after re-sign / relaunch (no prompt).
             for _ in 0..<3 {
                 try? await Task.sleep(nanoseconds: 250_000_000)
                 if CGPreflightScreenCaptureAccess() {
@@ -39,11 +61,13 @@ final class PermissionManager: NSObject, ObservableObject, NSWindowDelegate {
     }
 
     func requestScreenRecording() {
+        markRestoreOnboardingAfterTCC()
         _ = CGRequestScreenCaptureAccess()
         Task { await refreshAsync() }
     }
 
     func openScreenRecordingSettings() {
+        markRestoreOnboardingAfterTCC()
         let urls = [
             "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture",
             "x-apple.systempreferences:com.apple.settings.PrivacySecurity.extension?Privacy_ScreenCapture"
@@ -81,7 +105,6 @@ final class PermissionManager: NSObject, ObservableObject, NSWindowDelegate {
         Task { await refreshAsync() }
     }
 
-    /// First launch: show full wizard only when onboarding is incomplete.
     func showOnboardingIfNeeded() {
         Task { @MainActor in
             guard !AppServices.shared.settings.hasCompletedOnboarding else { return }
@@ -90,7 +113,6 @@ final class PermissionManager: NSObject, ObservableObject, NSWindowDelegate {
         }
     }
 
-    /// After onboarding: show the compact gate only when Screen Recording is missing.
     func showPermissionsGateIfNeeded() {
         Task { @MainActor in
             let granted = await refreshAsync()
@@ -99,7 +121,6 @@ final class PermissionManager: NSObject, ObservableObject, NSWindowDelegate {
         }
     }
 
-    /// Menu “Check permissions”: always open the compact gate.
     func openPermissionsPanel() {
         Task { @MainActor in
             _ = await refreshAsync()
@@ -107,18 +128,27 @@ final class PermissionManager: NSObject, ObservableObject, NSWindowDelegate {
         }
     }
 
-    /// Full onboarding wizard (first launch or Settings → Open onboarding).
+    /// Full onboarding wizard (first launch, Settings, or restore after TCC kill).
     func presentOnboarding() {
         if let existing = onboardingWindow {
+            NSApp.setActivationPolicy(.regular)
             existing.makeKeyAndOrderFront(nil)
+            existing.orderFrontRegardless()
             NSApp.activate(ignoringOtherApps: true)
+            clearRestoreOnboardingAfterTCC()
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                NSApp.setActivationPolicy(.accessory)
+            }
             return
         }
         closePermissionsWindow()
         let view = OnboardingView(permissions: self) { [weak self] in
+            UserDefaults.standard.removeObject(forKey: Self.onboardingResumeStepKey)
+            self?.clearRestoreOnboardingAfterTCC()
             AppServices.shared.settings.hasCompletedOnboarding = true
             AppDelegate.shared?.lifecycleRegisterHotkeysAfterOnboarding()
             self?.onboardingWindow?.close()
+            NSApp.setActivationPolicy(.accessory)
         }
         let hosting = NSHostingController(rootView: view)
         let window = NSWindow(contentViewController: hosting)
@@ -130,17 +160,26 @@ final class PermissionManager: NSObject, ObservableObject, NSWindowDelegate {
         window.delegate = self
         window.level = .floating
         window.collectionBehavior = [.moveToActiveSpace, .fullScreenAuxiliary]
+
+        // Brief .regular so accessory/agent apps reliably surface the welcome window.
+        NSApp.setActivationPolicy(.regular)
         window.center()
         window.makeKeyAndOrderFront(nil)
         window.orderFrontRegardless()
         NSApp.activate(ignoringOtherApps: true)
         onboardingWindow = window
-        DiagnosticLog.shared.info("onboarding.presented resumeStep=\(UserDefaults.standard.integer(forKey: "sf.onboardingResumeStep"))")
+        clearRestoreOnboardingAfterTCC()
+        DiagnosticLog.shared.info("onboarding.presented resumeStep=\(UserDefaults.standard.integer(forKey: Self.onboardingResumeStepKey))")
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+            // Stay accessory while the window remains open (LSUIElement agent).
+            NSApp.setActivationPolicy(.accessory)
+            window.makeKeyAndOrderFront(nil)
+            NSApp.activate(ignoringOtherApps: true)
+        }
     }
 
-    /// Compact Screen Recording panel (post-onboarding / menu check).
     func presentPermissionsGate() {
-        // Never displace the first-run wizard — PasteRush keeps onboarding until finish.
         if !AppServices.shared.settings.hasCompletedOnboarding {
             presentOnboarding()
             return
@@ -171,6 +210,7 @@ final class PermissionManager: NSObject, ObservableObject, NSWindowDelegate {
         guard let window = notification.object as? NSWindow else { return }
         if window === onboardingWindow {
             onboardingWindow = nil
+            NSApp.setActivationPolicy(.accessory)
         }
         if window === permissionsWindow {
             permissionsWindow = nil
@@ -178,20 +218,16 @@ final class PermissionManager: NSObject, ObservableObject, NSWindowDelegate {
     }
 
     func restartApp() {
-        // Prefer the installed app over a mounted DMG copy.
-        let applications = URL(fileURLWithPath: "/Applications/ScreenForge.app")
-        let url = FileManager.default.fileExists(atPath: applications.path)
-            ? applications
-            : Bundle.main.bundleURL
-
-        // Critical: plain `open` only activates the running instance; then terminate
-        // kills it and nothing comes back — welcome never reappears.
+        markRestoreOnboardingAfterTCC()
+        // Same binary only — jumping to /Applications can break TCC identity mid-grant.
+        let url = Bundle.main.bundleURL
         let config = NSWorkspace.OpenConfiguration()
         config.createsNewApplicationInstance = true
         config.activates = true
         NSWorkspace.shared.openApplication(at: url, configuration: config) { _, error in
             if let error {
                 DiagnosticLog.shared.error("restart.open.failed \(error.localizedDescription)")
+                return
             }
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
                 NSApp.terminate(nil)

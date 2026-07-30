@@ -150,6 +150,8 @@
 "Pin" = "Przypnij";
 "Request permission" = "Poproś o uprawnienie";
 "After granting in System Settings, use Check again. If macOS still requires a restart, use Relaunch." = "Po nadaniu w Ustawieniach systemowych użyj Sprawdź ponownie. Jeśli macOS nadal wymaga restartu, użyj Uruchom ponownie.";
+"After granting in System Settings, use Check again. macOS may quit the app — reopen ScreenForge and this screen returns automatically." = "Po nadaniu w Ustawieniach użyj Sprawdź ponownie. macOS może zamknąć aplikację — po ponownym otwarciu ten ekran wróci automatycznie.";
+"Permission is on. Continue, or relaunch if capture still fails." = "Uprawnienie jest włączone. Kontynuuj albo uruchom ponownie, jeśli zrzuty nadal nie działają.";
 "Pixelate" = "Pikselizacja";
 "Pixelate" = "Pixelate";
 "Polyline" = "Łamana";
