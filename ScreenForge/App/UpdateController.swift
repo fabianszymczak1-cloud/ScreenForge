@@ -5,17 +5,23 @@ import Sparkle
 final class UpdateController {
     static let shared = UpdateController()
 
-    private let updaterController: SPUStandardUpdaterController
+    private var updaterController: SPUStandardUpdaterController?
 
-    private init() {
+    private init() {}
+
+    /// Call after the menu-bar status item is installed (PasteRush order).
+    func start() {
+        guard updaterController == nil else { return }
         updaterController = SPUStandardUpdaterController(
             startingUpdater: true,
             updaterDelegate: nil,
             userDriverDelegate: nil
         )
+        DiagnosticLog.shared.info("sparkle.started")
     }
 
     func checkForUpdates() {
-        updaterController.checkForUpdates(nil)
+        start()
+        updaterController?.checkForUpdates(nil)
     }
 }

@@ -26,7 +26,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         PerformanceMonitor.shared.log("app.launch")
         let services = AppServices.shared
 
-        // PasteRush order: accessory → status item → everything else.
+        // PasteRush order: accessory → status item → Sparkle → everything else.
         NSApp.setActivationPolicy(.accessory)
 
         // Menu-bar-only app: never keep a persisted dock preference.
@@ -38,6 +38,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         setupStatusItem()
+
+        // Start Sparkle after the status item exists (PasteRush order).
+        UpdateController.shared.start()
 
         if services.settings.launchAtLogin {
             _ = services.launchAtLogin.applyPreference(true)
@@ -66,6 +69,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if AppServices.shared.settings.showMenuBarIcon {
             if statusItem == nil {
                 setupStatusItem()
+            } else {
+                statusItem?.isVisible = true
             }
         } else if let item = statusItem {
             NSStatusBar.system.removeStatusItem(item)
@@ -75,11 +80,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     /// Mirror PasteRushApp.setupStatusItem() as closely as possible.
     private func setupStatusItem() {
-        statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
+        if statusItem == nil {
+            statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
+        }
+        statusItem?.isVisible = true
         if let button = statusItem?.button {
-            button.image = NSImage(systemSymbolName: "camera.viewfinder", accessibilityDescription: "ScreenForge")
-            button.image?.isTemplate = true
+            let image = NSImage(systemSymbolName: "camera.viewfinder", accessibilityDescription: "ScreenForge")
+            image?.isTemplate = true
+            button.image = image
             button.toolTip = "ScreenForge"
+            DiagnosticLog.shared.info(
+                "statusItem.ready button=\(button) image=\(image != nil) visible=\(statusItem?.isVisible == true)"
+            )
+        } else {
+            DiagnosticLog.shared.error("statusItem.button is nil — menu bar icon missing")
         }
         statusItem?.menu = buildMenu(services: AppServices.shared)
     }
