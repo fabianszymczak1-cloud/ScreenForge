@@ -3,7 +3,7 @@
 **Native screenshot capture & annotation for macOS** — region, window, and display capture with a local editor. No account. No cloud. No telemetry.
 
 <p align="center">
-  <img src="docs/screenshots/editor.png" alt="ScreenForge editor" width="820" />
+  <img src="docs/screenshots/editor.png" alt="ScreenForge annotation editor" width="820" />
 </p>
 
 <p align="center">
@@ -34,9 +34,13 @@ If ScreenForge helps you, you can support development here:
 | **EN + PL** | Follows your macOS system language |
 
 <p align="center">
-  <img src="docs/screenshots/menu.png" alt="Menu bar" width="400" />
+  <img src="docs/screenshots/menu.png" alt="Menu bar capture menu" width="400" />
   &nbsp;
   <img src="docs/screenshots/settings.png" alt="Settings" width="400" />
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/history.png" alt="Capture history" width="820" />
 </p>
 
 ## Install

@@ -30,6 +30,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 await SmokeTestRunner.run(services: services)
             }
         }
+
+        if ProcessInfo.processInfo.arguments.contains("--docs-screenshots") {
+            services.settings.hasCompletedOnboarding = true
+            Task { @MainActor in
+                await DocsScreenshotRunner.run(services: services)
+            }
+        }
     }
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
