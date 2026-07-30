@@ -55,7 +55,10 @@ struct OnboardingView: View {
                             .foregroundStyle(.secondary)
                         if permissions.hasScreenRecording {
                             Button(String(localized: "Relaunch ScreenForge")) {
+                                // Keep wizard incomplete and remember step across relaunch.
+                                settings.hasCompletedOnboarding = false
                                 UserDefaults.standard.set(step, forKey: resumeStepKey)
+                                UserDefaults.standard.synchronize()
                                 permissions.restartApp()
                             }
                         }

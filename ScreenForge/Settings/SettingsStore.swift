@@ -276,15 +276,20 @@ final class SettingsStore: ObservableObject {
     private static func migrateLegacyPreferencesIfNeeded() {
         let current = UserDefaults.standard
         if current.object(forKey: "sf.prefsMigratedToAppScreenforge") as? Bool == true { return }
-        // Prefer copying when this domain is empty of core keys.
         let needsSeed = current.object(forKey: "sf.onboarding") == nil
         let legacyIDs = ["com.screenforge.macos", "com.screenforge.app", "com.local.ScreenForge"]
+        // Never import onboarding completion — a fresh/reinstalled identity must see welcome.
+        let skipKeys: Set<String> = [
+            "sf.onboarding",
+            "sf.onboardingResumeStep",
+            "sf.prefsMigratedToAppScreenforge"
+        ]
         if needsSeed {
             for id in legacyIDs {
                 guard let legacy = UserDefaults(suiteName: id) else { continue }
                 let dict = legacy.dictionaryRepresentation()
                 var copied = false
-                for (key, value) in dict where key.hasPrefix("sf.") {
+                for (key, value) in dict where key.hasPrefix("sf.") && !skipKeys.contains(key) {
                     current.set(value, forKey: key)
                     copied = true
                 }

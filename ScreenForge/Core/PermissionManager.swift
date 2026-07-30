@@ -128,11 +128,14 @@ final class PermissionManager: NSObject, ObservableObject, NSWindowDelegate {
         window.center()
         window.isReleasedWhenClosed = false
         window.delegate = self
-        // Bring welcome above any leftover capture UI after relaunch.
         window.level = .floating
+        window.collectionBehavior = [.moveToActiveSpace, .fullScreenAuxiliary]
+        window.center()
         window.makeKeyAndOrderFront(nil)
+        window.orderFrontRegardless()
         NSApp.activate(ignoringOtherApps: true)
         onboardingWindow = window
+        DiagnosticLog.shared.info("onboarding.presented resumeStep=\(UserDefaults.standard.integer(forKey: "sf.onboardingResumeStep"))")
     }
 
     /// Compact Screen Recording panel (post-onboarding / menu check).
@@ -175,12 +178,25 @@ final class PermissionManager: NSObject, ObservableObject, NSWindowDelegate {
     }
 
     func restartApp() {
-        let url = Bundle.main.bundleURL
-        let task = Process()
-        task.executableURL = URL(fileURLWithPath: "/usr/bin/open")
-        task.arguments = [url.path]
-        try? task.run()
-        NSApp.terminate(nil)
+        // Prefer the installed app over a mounted DMG copy.
+        let applications = URL(fileURLWithPath: "/Applications/ScreenForge.app")
+        let url = FileManager.default.fileExists(atPath: applications.path)
+            ? applications
+            : Bundle.main.bundleURL
+
+        // Critical: plain `open` only activates the running instance; then terminate
+        // kills it and nothing comes back — welcome never reappears.
+        let config = NSWorkspace.OpenConfiguration()
+        config.createsNewApplicationInstance = true
+        config.activates = true
+        NSWorkspace.shared.openApplication(at: url, configuration: config) { _, error in
+            if let error {
+                DiagnosticLog.shared.error("restart.open.failed \(error.localizedDescription)")
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+                NSApp.terminate(nil)
+            }
+        }
     }
 
     private func closeOnboardingWindow() {

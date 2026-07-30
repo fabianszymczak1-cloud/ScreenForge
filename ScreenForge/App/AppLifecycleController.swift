@@ -14,7 +14,12 @@ final class AppLifecycleController {
         services.displays.refresh()
         services.menuBar.install()
 
-        // PasteRush order: show onboarding immediately (do not await TCC first — that can hang).
+        // Resume flag means user relaunched mid-wizard — never skip welcome.
+        let resumeStep = UserDefaults.standard.object(forKey: "sf.onboardingResumeStep") != nil
+        if resumeStep {
+            services.settings.hasCompletedOnboarding = false
+        }
+
         if services.settings.hasCompletedOnboarding {
             services.hotkeys.registerAll()
             Task {
@@ -27,15 +32,19 @@ final class AppLifecycleController {
                     }
                 }
             }
+            recoverAutosavesIfNeeded()
         } else {
-            services.permissions.presentOnboarding()
+            // Defer so the accessory app finishes activating; immediate present can no-op after relaunch.
+            DispatchQueue.main.async {
+                self.services.permissions.presentOnboarding()
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+                guard !self.services.settings.hasCompletedOnboarding else { return }
+                self.services.permissions.presentOnboarding()
+            }
             Task { _ = await services.permissions.refreshAsync() }
         }
 
-        // Never block first-run welcome with recovery modal.
-        if services.settings.hasCompletedOnboarding {
-            recoverAutosavesIfNeeded()
-        }
         NotificationCenter.default.addObserver(
             forName: NSApplication.didChangeScreenParametersNotification,
             object: nil,
