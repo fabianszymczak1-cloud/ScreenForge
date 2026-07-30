@@ -87,8 +87,10 @@ final class PermissionManager: NSObject, ObservableObject, NSWindowDelegate {
     }
 
     func openMenuBarSettings() {
-        // Ensure Control Center / Menu Bar allow-list can see this running agent.
-        AppDelegate.shared?.reRegisterStatusItemForMenuBarAllowList()
+        // Keep a stable status item visible; do not recreate on every Settings open.
+        AppServices.shared.settings.showMenuBarIcon = true
+        AppDelegate.shared?.applyMenuBarIconPreference()
+        NSApp.setActivationPolicy(.accessory)
 
         let urls = [
             "x-apple.systempreferences:com.apple.MenuBarSettings",

@@ -82,26 +82,26 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
-    /// Recreate the status item so System Settings → Menu Bar can list ScreenForge.
+    /// Ensure a stable status item exists so System Settings → Menu Bar can list ScreenForge.
+    /// Do not flip activation policy — that confuses Tahoe StatusKit attribution.
     func reRegisterStatusItemForMenuBarAllowList() {
         AppServices.shared.settings.showMenuBarIcon = true
-        // Brief regular activation helps Tahoe register the agent in the allow-list UI.
-        NSApp.setActivationPolicy(.regular)
-        setupStatusItem()
+        NSApp.setActivationPolicy(.accessory)
+        setupStatusItem(forceRecreate: true)
         statusItem?.isVisible = true
         NSApp.activate(ignoringOtherApps: true)
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
-            NSApp.setActivationPolicy(.accessory)
-        }
     }
 
-    private func setupStatusItem() {
-        if let existing = statusItem {
+    private func setupStatusItem(forceRecreate: Bool = false) {
+        if forceRecreate, let existing = statusItem {
             NSStatusBar.system.removeStatusItem(existing)
             statusItem = nil
         }
+        if statusItem != nil { return }
 
         let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
+        // Stable identity for Control Center / StatusKit (PasteRush ends up as Item-0).
+        item.autosaveName = "ScreenForgeMain"
         item.isVisible = true
         if let button = item.button {
             let image = NSImage(systemSymbolName: "camera.viewfinder", accessibilityDescription: "ScreenForge")

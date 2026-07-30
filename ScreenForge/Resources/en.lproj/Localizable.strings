@@ -119,7 +119,7 @@
 "macOS 26 keeps menu bar apps behind System Settings → Menu Bar. Turn ScreenForge on, then come back." = "macOS 26 keeps menu bar apps behind System Settings → Menu Bar. Turn ScreenForge on, then come back.";
 "In System Settings open Menu Bar, then scroll to “Allow in the Menu Bar” (Zezwalaj w pasku menu). ScreenForge appears only while the app is running." = "In System Settings open Menu Bar, then scroll to “Allow in the Menu Bar” (Zezwalaj w pasku menu). ScreenForge appears only while the app is running.";
 "Register again in Menu Bar list" = "Register again in Menu Bar list";
-"If ScreenForge is still missing from the list, quit other copies, eject any ScreenForge DMG, open only /Applications/ScreenForge.app, then tap Register again." = "If ScreenForge is still missing from the list, quit other copies, eject any ScreenForge DMG, open only /Applications/ScreenForge.app, then tap Register again.";
+"If ScreenForge is still missing: quit ScreenForge completely, eject any ScreenForge DMG, open only /Applications/ScreenForge.app from Finder (not from Terminal or Cursor), then open Menu Bar settings again. You may also need Screen Recording again after a fresh install." = "If ScreenForge is still missing: quit ScreenForge completely, eject any ScreenForge DMG, open only /Applications/ScreenForge.app from Finder (not from Terminal or Cursor), then open Menu Bar settings again. You may also need Screen Recording again after a fresh install.";
 "After enabling, look for the camera.viewfinder icon next to other menu bar apps. If it is missing, toggle ScreenForge off and on once." = "After enabling, look for the camera.viewfinder icon next to other menu bar apps. If it is missing, toggle ScreenForge off and on once.";
 "Later" = "Later";
 "Name" = "Name";

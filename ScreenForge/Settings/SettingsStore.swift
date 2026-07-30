@@ -272,18 +272,24 @@ final class SettingsStore: ObservableObject {
         PerformanceMonitor.shared.isEnabled = developerMode
     }
 
-    /// Copy `sf.*` keys from older bundle IDs (Tahoe Control Center can poison an ID).
+    /// Copy `sf.*` keys from older bundle IDs (Tahoe StatusKit can poison an ID).
     private static func migrateLegacyPreferencesIfNeeded() {
         let current = UserDefaults.standard
-        if current.object(forKey: "sf.prefsMigratedToAppScreenforge") as? Bool == true { return }
+        if current.object(forKey: "sf.prefsMigratedToCaptureID") as? Bool == true { return }
         let needsSeed = current.object(forKey: "sf.onboarding") == nil
-        let legacyIDs = ["com.screenforge.macos", "com.screenforge.app", "com.local.ScreenForge"]
-        // Never import onboarding completion — a fresh/reinstalled identity must see welcome.
+        let legacyIDs = [
+            "app.screenforge.macos",
+            "com.screenforge.macos",
+            "com.screenforge.app",
+            "com.local.ScreenForge"
+        ]
+        // Never import onboarding completion — a fresh identity must see welcome.
         let skipKeys: Set<String> = [
             "sf.onboarding",
             "sf.onboardingResumeStep",
             "sf.restoreOnboardingAfterTCC",
-            "sf.prefsMigratedToAppScreenforge"
+            "sf.prefsMigratedToAppScreenforge",
+            "sf.prefsMigratedToCaptureID"
         ]
         if needsSeed {
             for id in legacyIDs {
@@ -297,7 +303,7 @@ final class SettingsStore: ObservableObject {
                 if copied { break }
             }
         }
-        current.set(true, forKey: "sf.prefsMigratedToAppScreenforge")
+        current.set(true, forKey: "sf.prefsMigratedToCaptureID")
     }
 
     /// Safe to call before NSApp exists (no-op). Always accessory with LSUIElement.

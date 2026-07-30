@@ -76,7 +76,7 @@ struct OnboardingView: View {
                             AppDelegate.shared?.reRegisterStatusItemForMenuBarAllowList()
                             permissions.openMenuBarSettings()
                         }
-                        Text(String(localized: "If ScreenForge is still missing from the list, quit other copies, eject any ScreenForge DMG, open only /Applications/ScreenForge.app, then tap Register again."))
+                        Text(String(localized: "If ScreenForge is still missing: quit ScreenForge completely, eject any ScreenForge DMG, open only /Applications/ScreenForge.app from Finder (not from Terminal or Cursor), then open Menu Bar settings again. You may also need Screen Recording again after a fresh install."))
                             .font(.callout)
                             .foregroundStyle(.secondary)
                     }
