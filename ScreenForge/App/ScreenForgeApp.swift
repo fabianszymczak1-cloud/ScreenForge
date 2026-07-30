@@ -4,30 +4,12 @@ import AppKit
 @main
 struct ScreenForgeApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
-    @ObservedObject private var settings = AppServices.shared.settings
 
     var body: some Scene {
-        // Tahoe-native menu bar hosting (Control Center). Prefer this over AppKit NSStatusItem
-        // when a bundle ID's status-item slot is poisoned (Allow=ON but icon stays off-screen).
-        MenuBarExtra(isInserted: menuBarInserted) {
-            MenuBarExtraContent()
-        } label: {
-            Image(systemName: "camera.viewfinder")
-                .symbolRenderingMode(.monochrome)
-        }
-        .menuBarExtraStyle(.menu)
-
         Settings {
             SettingsRootView()
-                .environmentObject(settings)
+                .environmentObject(AppServices.shared.settings)
         }
-    }
-
-    private var menuBarInserted: Binding<Bool> {
-        Binding(
-            get: { settings.showMenuBarIcon },
-            set: { settings.showMenuBarIcon = $0 }
-        )
     }
 }
 
@@ -36,6 +18,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     static weak var shared: AppDelegate?
 
     private(set) var lifecycle: AppLifecycleController?
+    /// Strong ref — PasteRush pattern; must outlive the status bar.
+    private var statusItem: NSStatusItem?
 
     func lifecycleRegisterHotkeysAfterOnboarding() {
         lifecycle?.registerHotkeysAfterOnboarding()
@@ -48,13 +32,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         NSApp.setActivationPolicy(.accessory)
 
+        // Always keep menu-bar icon on for agent apps. Never persist a "removed" state
+        // from Control Center — that previously spun MenuBarExtra(isInserted:) at 100% CPU.
+        services.settings.showMenuBarIcon = true
         if services.settings.showDockIcon {
             services.settings.showDockIcon = false
         }
-        if !services.settings.showMenuBarIcon {
-            services.settings.showMenuBarIcon = true
-        }
 
+        setupStatusItem()
         UpdateController.shared.start()
 
         if services.settings.launchAtLogin {
@@ -84,9 +69,72 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
-    /// Menu bar visibility is owned by SwiftUI `MenuBarExtra(isInserted:)`.
     func applyMenuBarIconPreference() {
-        // No-op: `showMenuBarIcon` drives MenuBarExtra via binding.
+        if AppServices.shared.settings.showMenuBarIcon {
+            if statusItem == nil {
+                setupStatusItem()
+            } else {
+                statusItem?.isVisible = true
+            }
+        } else if let item = statusItem {
+            NSStatusBar.system.removeStatusItem(item)
+            statusItem = nil
+        }
+    }
+
+    private func setupStatusItem() {
+        if let existing = statusItem {
+            NSStatusBar.system.removeStatusItem(existing)
+            statusItem = nil
+        }
+
+        let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
+        item.isVisible = true
+        if let button = item.button {
+            let image = NSImage(systemSymbolName: "camera.viewfinder", accessibilityDescription: "ScreenForge")
+            image?.isTemplate = true
+            button.image = image
+            button.toolTip = "ScreenForge"
+        }
+        item.menu = buildMenu(services: AppServices.shared)
+        statusItem = item
+    }
+
+    private func buildMenu(services: AppServices) -> NSMenu {
+        let menu = NSMenu()
+        let mb = services.menuBar
+        func item(_ title: String, _ sel: Selector, key: String = "") -> NSMenuItem {
+            let i = NSMenuItem(title: title, action: sel, keyEquivalent: key)
+            i.target = mb
+            return i
+        }
+        menu.addItem(item(String(localized: "Capture region"), #selector(MenuBarController.captureRegion)))
+        menu.addItem(item(String(localized: "Capture window"), #selector(MenuBarController.captureWindow)))
+        menu.addItem(item(String(localized: "Capture active display"), #selector(MenuBarController.captureDisplay)))
+        menu.addItem(item(String(localized: "Capture all displays"), #selector(MenuBarController.captureAll)))
+        menu.addItem(item(String(localized: "Capture last region"), #selector(MenuBarController.captureLast)))
+        menu.addItem(item(String(localized: "Capture with delay"), #selector(MenuBarController.captureDelayed)))
+        menu.addItem(.separator())
+        menu.addItem(item(String(localized: "Open history"), #selector(MenuBarController.showHistory)))
+        let openFile = item(String(localized: "Open image from file…"), #selector(MenuBarController.openFile), key: "o")
+        openFile.keyEquivalentModifierMask = [.command]
+        menu.addItem(openFile)
+        menu.addItem(item(String(localized: "Open image from clipboard"), #selector(MenuBarController.openClipboard)))
+        menu.addItem(item(String(localized: "Last capture"), #selector(MenuBarController.openLast)))
+        menu.addItem(.separator())
+        let settings = item(String(localized: "Settings…"), #selector(MenuBarController.showSettings), key: ",")
+        settings.keyEquivalentModifierMask = [.command]
+        menu.addItem(settings)
+        menu.addItem(item(String(localized: "Launch at login"), #selector(MenuBarController.toggleLogin)))
+        menu.addItem(item(String(localized: "Check permissions"), #selector(MenuBarController.checkPermissions)))
+        menu.addItem(item(String(localized: "About"), #selector(MenuBarController.showAbout)))
+        menu.addItem(item(String(localized: "Check for Updates…"), #selector(MenuBarController.checkForUpdates)))
+        menu.addItem(item(String(localized: "Buy Me a Coffee"), #selector(MenuBarController.openSupport)))
+        menu.addItem(.separator())
+        let quit = item(String(localized: "Quit"), #selector(MenuBarController.quit), key: "q")
+        quit.keyEquivalentModifierMask = [.command]
+        menu.addItem(quit)
+        return menu
     }
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {

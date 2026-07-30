@@ -13,23 +13,25 @@ final class AppLifecycleController {
         services.history.open()
         services.displays.refresh()
         services.menuBar.install()
-        // Hotkeys only after onboarding — prevents capture → permissions gate from killing the wizard.
+
+        // PasteRush order: show onboarding immediately (do not await TCC first — that can hang).
         if services.settings.hasCompletedOnboarding {
             services.hotkeys.registerAll()
-        }
-        Task {
-            let granted = await services.permissions.refreshAsync()
-            if !services.settings.hasCompletedOnboarding {
-                services.permissions.showOnboardingIfNeeded()
-            } else if services.settings.checkPermissionsOnLaunch && !granted {
-                // One more delayed probe — TCC often lags right after launch / re-sign.
-                try? await Task.sleep(nanoseconds: 800_000_000)
-                let grantedLater = await services.permissions.refreshAsync()
-                if !grantedLater {
-                    services.permissions.presentPermissionsGate()
+            Task {
+                let granted = await services.permissions.refreshAsync()
+                if services.settings.checkPermissionsOnLaunch && !granted {
+                    try? await Task.sleep(nanoseconds: 800_000_000)
+                    let grantedLater = await services.permissions.refreshAsync()
+                    if !grantedLater {
+                        services.permissions.presentPermissionsGate()
+                    }
                 }
             }
+        } else {
+            services.permissions.presentOnboarding()
+            Task { _ = await services.permissions.refreshAsync() }
         }
+
         recoverAutosavesIfNeeded()
         NotificationCenter.default.addObserver(
             forName: NSApplication.didChangeScreenParametersNotification,
