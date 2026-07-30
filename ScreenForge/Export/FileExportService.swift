@@ -19,6 +19,20 @@ final class FileExportService {
         return url
     }
 
+    func openSaveDirectory() {
+        let url = saveDirectory
+        NSWorkspace.shared.open(url)
+    }
+
+    /// Reveal a specific exported file in Finder (falls back to the folder).
+    func revealInFinder(_ fileURL: URL?) {
+        if let fileURL, FileManager.default.fileExists(atPath: fileURL.path) {
+            NSWorkspace.shared.activateFileViewerSelecting([fileURL])
+        } else {
+            openSaveDirectory()
+        }
+    }
+
     func save(image: CGImage, result: CaptureResult?, format: String? = nil) throws -> URL {
         let url = filenames.nextURL(in: saveDirectory, result: result)
         try write(image: image, to: url, format: format ?? url.pathExtension)

@@ -167,6 +167,7 @@
 "Save the document before closing?" = "Zapisać dokument przed zamknięciem?";
 "Saved" = "Zapisano";
 "Screen Recording appears unavailable. Check permissions in the ScreenForge menu." = "Nagrywanie ekranu wygląda na niedostępne. Sprawdź uprawnienia w menu ScreenForge.";
+"Screen Recording is required to capture." = "Uprawnienie Nagrywanie ekranu jest wymagane do zrzutów.";
 "Screen Recording permission missing" = "Brak uprawnienia Nagrywanie ekranu";
 "ScreenForge does not send data to the internet. No account, telemetry, or cloud." = "ScreenForge nie wysyła danych do internetu. Brak konta, telemetrii i chmury.";
 "ScreenForge stays fully local. Screenshots never leave your Mac." = "ScreenForge działa w pełni lokalnie. Zrzuty ekranu nie opuszczają Twojego komputera.";
@@ -244,3 +245,7 @@
 "Preview: %@" = "Podgląd: %@";
 "Found %lld unsaved documents. Open them?" = "Znaleziono %lld niezapisanych dokumentów. Otworzyć je?";
 "ScreenForge needs Screen Recording only to take local screenshots. Images never leave your Mac." = "ScreenForge potrzebuje uprawnienia Nagrywanie ekranu wyłącznie do wykonywania lokalnych zrzutów. Obrazy nie opuszczają Twojego komputera.";
+"macOS needs your approval for login items." = "macOS wymaga Twojej zgody na elementy logowania.";
+"Open Login Items settings" = "Otwórz ustawienia elementów logowania";
+"Open export folder" = "Otwórz folder eksportu";
+"Open the folder with exported PNG files in Finder" = "Otwórz w Finderze folder z wyeksportowanymi plikami PNG";

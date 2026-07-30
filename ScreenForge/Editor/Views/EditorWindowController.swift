@@ -323,6 +323,10 @@ final class EditorWindowController: NSWindowController, NSWindowDelegate {
         }
     }
 
+    func openExportFolder() {
+        AppServices.shared.files.openSaveDirectory()
+    }
+
     func runOCR(selectionOnly: Bool) {
         Task {
             guard let image = renderer.render(documentModel, quality: .full) else { return }
@@ -706,6 +710,8 @@ struct EditorPropertiesView: View {
                     .help(String(localized: "Detect emails, phones, PESEL, cards and redact them"))
                 Button("Export PNG") { controller?.exportPNG() }
                     .help(String(localized: "Export current image as PNG"))
+                Button(String(localized: "Open export folder")) { controller?.openExportFolder() }
+                    .help(String(localized: "Open the folder with exported PNG files in Finder"))
             }
             .padding(12)
             .frame(maxWidth: .infinity, alignment: .leading)

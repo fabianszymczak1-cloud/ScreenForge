@@ -1,46 +1,41 @@
 import Foundation
 import AppKit
 import SwiftUI
-import ScreenCaptureKit
 
 @MainActor
-final class PermissionManager: ObservableObject {
+final class PermissionManager: NSObject, ObservableObject, NSWindowDelegate {
     @Published private(set) var hasScreenRecording = false
     @Published private(set) var hasAccessibility = false
     @Published private(set) var isRefreshing = false
     private var onboardingWindow: NSWindow?
+    private var permissionsWindow: NSWindow?
 
     func refresh() {
-        let preflight = CGPreflightScreenCaptureAccess()
-        hasAccessibility = AXIsProcessTrusted()
-        if preflight {
-            hasScreenRecording = true
-            return
-        }
-        // Sync path: keep previous SC-probed true if we already know; otherwise start async probe
         Task { await refreshAsync() }
     }
 
-    func refreshAsync() async {
+    @discardableResult
+    func refreshAsync() async -> Bool {
         isRefreshing = true
         defer { isRefreshing = false }
-        let preflight = CGPreflightScreenCaptureAccess()
         hasAccessibility = AXIsProcessTrusted()
-        if preflight {
-            hasScreenRecording = true
-            return
-        }
-        hasScreenRecording = await Self.canAccessShareableContent()
-    }
 
-    /// ScreenCaptureKit can succeed even when CGPreflight briefly reports false (TCC lag / binary path).
-    nonisolated private static func canAccessShareableContent() async -> Bool {
-        do {
-            _ = try await SCShareableContent.excludingDesktopWindows(false, onScreenWindowsOnly: true)
-            return true
-        } catch {
-            return false
+        // Only use CGPreflight for automatic checks.
+        // SCShareableContent.excludingDesktopWindows prompts for TCC and can
+        // disrupt menu-bar hosting on macOS Tahoe — never call it on launch.
+        var granted = CGPreflightScreenCaptureAccess()
+        if !granted {
+            // Brief retry for TCC lag after re-sign / relaunch (no prompt).
+            for _ in 0..<3 {
+                try? await Task.sleep(nanoseconds: 250_000_000)
+                if CGPreflightScreenCaptureAccess() {
+                    granted = true
+                    break
+                }
+            }
         }
+        hasScreenRecording = granted
+        return granted
     }
 
     func requestScreenRecording() {
@@ -73,28 +68,89 @@ final class PermissionManager: ObservableObject {
         Task { await refreshAsync() }
     }
 
-    /// - Parameter force: show even if onboarding already completed (e.g. menu “Sprawdź uprawnienia”).
-    func showOnboardingIfNeeded(force: Bool) {
-        Task { await refreshAsync() }
-        if !force && AppServices.shared.settings.hasCompletedOnboarding {
+    /// First launch: show full wizard only when onboarding is incomplete.
+    func showOnboardingIfNeeded() {
+        Task { @MainActor in
+            guard !AppServices.shared.settings.hasCompletedOnboarding else { return }
+            _ = await refreshAsync()
+            presentOnboarding()
+        }
+    }
+
+    /// After onboarding: show the compact gate only when Screen Recording is missing.
+    func showPermissionsGateIfNeeded() {
+        Task { @MainActor in
+            let granted = await refreshAsync()
+            guard !granted else { return }
+            presentPermissionsGate()
+        }
+    }
+
+    /// Menu “Check permissions”: always open the compact gate.
+    func openPermissionsPanel() {
+        Task { @MainActor in
+            _ = await refreshAsync()
+            presentPermissionsGate()
+        }
+    }
+
+    /// Full onboarding wizard (first launch or Settings → Open onboarding).
+    func presentOnboarding() {
+        if let existing = onboardingWindow {
+            existing.makeKeyAndOrderFront(nil)
+            NSApp.activate(ignoringOtherApps: true)
             return
         }
-        if onboardingWindow != nil { return }
+        closePermissionsWindow()
         let view = OnboardingView(permissions: self) { [weak self] in
             self?.onboardingWindow?.close()
-            self?.onboardingWindow = nil
             AppServices.shared.settings.hasCompletedOnboarding = true
         }
         let hosting = NSHostingController(rootView: view)
         let window = NSWindow(contentViewController: hosting)
         window.title = "ScreenForge"
         window.styleMask = [.titled, .closable]
-        window.setContentSize(NSSize(width: 520, height: 420))
+        window.setContentSize(NSSize(width: 520, height: 440))
         window.center()
         window.isReleasedWhenClosed = false
+        window.delegate = self
         window.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
         onboardingWindow = window
+    }
+
+    /// Compact Screen Recording panel (post-onboarding / menu check).
+    func presentPermissionsGate() {
+        if let existing = permissionsWindow {
+            existing.makeKeyAndOrderFront(nil)
+            NSApp.activate(ignoringOtherApps: true)
+            return
+        }
+        closeOnboardingWindow()
+        let view = PermissionsGateView(permissions: self) { [weak self] in
+            self?.permissionsWindow?.close()
+        }
+        let hosting = NSHostingController(rootView: view)
+        let window = NSWindow(contentViewController: hosting)
+        window.title = "ScreenForge"
+        window.styleMask = [.titled, .closable]
+        window.setContentSize(NSSize(width: 520, height: 360))
+        window.center()
+        window.isReleasedWhenClosed = false
+        window.delegate = self
+        window.makeKeyAndOrderFront(nil)
+        NSApp.activate(ignoringOtherApps: true)
+        permissionsWindow = window
+    }
+
+    func windowWillClose(_ notification: Notification) {
+        guard let window = notification.object as? NSWindow else { return }
+        if window === onboardingWindow {
+            onboardingWindow = nil
+        }
+        if window === permissionsWindow {
+            permissionsWindow = nil
+        }
     }
 
     func restartApp() {
@@ -104,5 +160,17 @@ final class PermissionManager: ObservableObject {
         task.arguments = [url.path]
         try? task.run()
         NSApp.terminate(nil)
+    }
+
+    private func closeOnboardingWindow() {
+        onboardingWindow?.delegate = nil
+        onboardingWindow?.close()
+        onboardingWindow = nil
+    }
+
+    private func closePermissionsWindow() {
+        permissionsWindow?.delegate = nil
+        permissionsWindow?.close()
+        permissionsWindow = nil
     }
 }

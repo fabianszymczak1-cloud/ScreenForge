@@ -46,11 +46,17 @@ final class SettingsStore: ObservableObject {
     @Published var showDockIcon: Bool {
         didSet {
             d.set(showDockIcon, forKey: prefix + "dock")
-            NSApp.setActivationPolicy(showDockIcon ? .regular : .accessory)
+            // Keep .accessory while LSUIElement is set. Do not flip Regular↔Accessory.
+            applyActivationPolicy()
         }
     }
     @Published var showMenuBarIcon: Bool {
         didSet { d.set(showMenuBarIcon, forKey: prefix + "menubar") }
+    }
+    /// Desired launch-at-login preference (persisted). Actual SMAppService state may lag
+    /// until the user approves Login Items in System Settings.
+    @Published var launchAtLogin: Bool {
+        didSet { d.set(launchAtLogin, forKey: prefix + "launchAtLogin") }
     }
     @Published var theme: AppTheme {
         didSet { d.set(theme.rawValue, forKey: prefix + "theme") }
@@ -205,6 +211,7 @@ final class SettingsStore: ObservableObject {
         hasCompletedOnboarding = b("onboarding", false)
         showDockIcon = b("dock", false)
         showMenuBarIcon = b("menubar", true)
+        launchAtLogin = b("launchAtLogin", false)
         theme = AppTheme(rawValue: s("theme", "system")) ?? .system
         language = AppLanguage(rawValue: s("lang", "system")) ?? .system
         playShutterSound = b("sound", false)
@@ -256,6 +263,12 @@ final class SettingsStore: ObservableObject {
             hotkeyBindings = HotkeyBinding.defaults
         }
         PerformanceMonitor.shared.isEnabled = developerMode
+    }
+
+    /// Safe to call before NSApp exists (no-op). Always accessory with LSUIElement.
+    func applyActivationPolicy() {
+        guard NSApp != nil else { return }
+        NSApp.setActivationPolicy(.accessory)
     }
 
     func resetDefaults() {

@@ -167,6 +167,7 @@
 "Save the document before closing?" = "Save the document before closing?";
 "Saved" = "Saved";
 "Screen Recording appears unavailable. Check permissions in the ScreenForge menu." = "Screen Recording appears unavailable. Check permissions in the ScreenForge menu.";
+"Screen Recording is required to capture." = "Screen Recording is required to capture.";
 "Screen Recording permission missing" = "Screen Recording permission missing";
 "ScreenForge does not send data to the internet. No account, telemetry, or cloud." = "ScreenForge does not send data to the internet. No account, telemetry, or cloud.";
 "ScreenForge stays fully local. Screenshots never leave your Mac." = "ScreenForge stays fully local. Screenshots never leave your Mac.";
@@ -209,3 +210,7 @@
 "Window not found" = "Window not found";
 "Window shadow" = "Window shadow";
 "You can change this later in the menu." = "You can change this later in the menu.";
+"macOS needs your approval for login items." = "macOS needs your approval for login items.";
+"Open Login Items settings" = "Open Login Items settings";
+"Open export folder" = "Open export folder";
+"Open the folder with exported PNG files in Finder" = "Open the folder with exported PNG files in Finder";

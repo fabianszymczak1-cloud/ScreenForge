@@ -34,7 +34,8 @@ targets:
         product: Sparkle
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.local.ScreenForge
+        CODE_SIGN_ENTITLEMENTS: ScreenForge/Resources/ScreenForge.entitlements
+        PRODUCT_BUNDLE_IDENTIFIER: com.screenforge.app
         PRODUCT_NAME: ScreenForge
         INFOPLIST_FILE: ScreenForge/Resources/Info.plist
         GENERATE_INFOPLIST_FILE: NO
@@ -51,7 +52,7 @@ targets:
       properties:
         CFBundleName: ScreenForge
         CFBundleDisplayName: ScreenForge
-        CFBundleIdentifier: com.local.ScreenForge
+        CFBundleIdentifier: com.screenforge.app
         CFBundleShortVersionString: "1.0.0"
         CFBundleVersion: "1"
         CFBundleDevelopmentRegion: en

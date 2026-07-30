@@ -15,16 +15,16 @@ final class AppLifecycleController {
         services.menuBar.install()
         services.hotkeys.registerAll()
         Task {
-            await services.permissions.refreshAsync()
-            // Full wizard only when onboarding was never completed.
-            // Do not re-open it solely because CGPreflight briefly reports false.
+            let granted = await services.permissions.refreshAsync()
             if !services.settings.hasCompletedOnboarding {
-                services.permissions.showOnboardingIfNeeded(force: true)
-            } else if services.settings.checkPermissionsOnLaunch && !services.permissions.hasScreenRecording {
-                services.notifications.show(
-                    title: String(localized: "Permission missing"),
-                    body: String(localized: "Screen Recording appears unavailable. Check permissions in the ScreenForge menu.")
-                )
+                services.permissions.showOnboardingIfNeeded()
+            } else if services.settings.checkPermissionsOnLaunch && !granted {
+                // One more delayed probe — TCC often lags right after launch / re-sign.
+                try? await Task.sleep(nanoseconds: 800_000_000)
+                let grantedLater = await services.permissions.refreshAsync()
+                if !grantedLater {
+                    services.permissions.presentPermissionsGate()
+                }
             }
         }
         recoverAutosavesIfNeeded()

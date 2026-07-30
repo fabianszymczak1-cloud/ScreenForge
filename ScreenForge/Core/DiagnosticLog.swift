@@ -2,7 +2,7 @@ import Foundation
 
 final class DiagnosticLog: @unchecked Sendable {
     static let shared = DiagnosticLog()
-    private let queue = DispatchQueue(label: "com.local.ScreenForge.log")
+    private let queue = DispatchQueue(label: "com.screenforge.app.log")
     private let fileURL: URL
 
     private init() {

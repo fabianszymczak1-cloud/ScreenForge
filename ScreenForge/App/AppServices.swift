@@ -123,9 +123,9 @@ final class AppServices: ObservableObject {
 
     private func ensureScreenRecording() async -> Bool {
         if permissions.hasScreenRecording { return true }
-        await permissions.refreshAsync()
-        if permissions.hasScreenRecording { return true }
-        permissions.showOnboardingIfNeeded(force: true)
+        if await permissions.refreshAsync() { return true }
+        // Compact gate when access is still missing after retries (not full onboarding).
+        permissions.showPermissionsGateIfNeeded()
         return false
     }
 

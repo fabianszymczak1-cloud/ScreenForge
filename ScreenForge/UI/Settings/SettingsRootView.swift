@@ -1,33 +1,72 @@
 import SwiftUI
 import Carbon.HIToolbox
 
+enum SettingsSection: String, CaseIterable, Identifiable {
+    case general, shortcuts, capture, afterCapture, editor, files, history, privacy, permissions, advanced, about
+    var id: String { rawValue }
+    var title: String {
+        switch self {
+        case .general: return String(localized: "General")
+        case .shortcuts: return String(localized: "Shortcuts")
+        case .capture: return String(localized: "Capture")
+        case .afterCapture: return String(localized: "After capture")
+        case .editor: return String(localized: "Editor")
+        case .files: return String(localized: "Files")
+        case .history: return String(localized: "History")
+        case .privacy: return String(localized: "Privacy")
+        case .permissions: return String(localized: "Permissions")
+        case .advanced: return String(localized: "Advanced")
+        case .about: return String(localized: "About")
+        }
+    }
+}
+
 struct SettingsRootView: View {
     @EnvironmentObject var settings: SettingsStore
+    @State private var selected: SettingsSection = .general
 
     var body: some View {
-        TabView {
-            GeneralSettingsView().tabItem { Label(String(localized: "General"), systemImage: "gearshape") }
-            HotkeysSettingsView().tabItem { Label(String(localized: "Shortcuts"), systemImage: "keyboard") }
-            CaptureSettingsView().tabItem { Label(String(localized: "Capture"), systemImage: "camera") }
-            PostCaptureSettingsView().tabItem { Label(String(localized: "After capture"), systemImage: "arrow.right.circle") }
-            EditorSettingsView().tabItem { Label(String(localized: "Editor"), systemImage: "paintbrush") }
-            FilesSettingsView().tabItem { Label(String(localized: "Files"), systemImage: "folder") }
-            HistorySettingsView().tabItem { Label(String(localized: "History"), systemImage: "clock") }
-            PrivacySettingsView().tabItem { Label(String(localized: "Privacy"), systemImage: "lock") }
-            PermissionsSettingsView().tabItem { Label(String(localized: "Permissions"), systemImage: "checkmark.shield") }
-            AdvancedSettingsView().tabItem { Label(String(localized: "Advanced"), systemImage: "wrench") }
-            AboutSettingsView().tabItem { Label(String(localized: "About"), systemImage: "info.circle") }
+        NavigationSplitView {
+            List(SettingsSection.allCases, selection: $selected) { section in
+                Text(section.title).tag(section)
+            }
+            .navigationSplitViewColumnWidth(min: 160, ideal: 180, max: 220)
+        } detail: {
+            ScrollView {
+                Group {
+                    switch selected {
+                    case .general: GeneralSettingsView()
+                    case .shortcuts: HotkeysSettingsView()
+                    case .capture: CaptureSettingsView()
+                    case .afterCapture: PostCaptureSettingsView()
+                    case .editor: EditorSettingsView()
+                    case .files: FilesSettingsView()
+                    case .history: HistorySettingsView()
+                    case .privacy: PrivacySettingsView()
+                    case .permissions: PermissionsSettingsView()
+                    case .advanced: AdvancedSettingsView()
+                    case .about: AboutSettingsView()
+                    }
+                }
+                .padding()
+                .frame(maxWidth: 640, alignment: .leading)
+            }
         }
-        .frame(width: 560, height: 480)
+        .frame(minWidth: 720, minHeight: 480)
     }
 }
 
 struct GeneralSettingsView: View {
     @EnvironmentObject var settings: SettingsStore
-    @State private var launch = false
+    @ObservedObject private var launchAtLogin = AppServices.shared.launchAtLogin
+
     var body: some View {
         Form {
             Toggle(String(localized: "Dock icon"), isOn: $settings.showDockIcon)
+                .disabled(true)
+            Text(String(localized: "Dock icon is unavailable while ScreenForge runs as a menu-bar app."))
+                .font(.caption)
+                .foregroundStyle(.secondary)
             Toggle(String(localized: "Menu bar icon"), isOn: $settings.showMenuBarIcon)
             Toggle(String(localized: "Shutter sound"), isOn: $settings.playShutterSound)
             Toggle(String(localized: "Notifications"), isOn: $settings.showNotifications)
@@ -38,17 +77,27 @@ struct GeneralSettingsView: View {
                 Text(String(localized: "Dark")).tag(AppTheme.dark)
             }
             Toggle(String(localized: "Launch at login"), isOn: Binding(
-                get: { AppServices.shared.launchAtLogin.isEnabled },
-                set: { try? AppServices.shared.launchAtLogin.setEnabled($0) }
+                get: { settings.launchAtLogin },
+                set: { newValue in
+                    settings.launchAtLogin = newValue
+                    _ = launchAtLogin.applyPreference(newValue)
+                }
             ))
+            if launchAtLogin.requiresApproval && settings.launchAtLogin {
+                Text(String(localized: "macOS needs your approval for login items."))
+                    .font(.caption)
+                    .foregroundStyle(.orange)
+                Button(String(localized: "Open Login Items settings")) {
+                    launchAtLogin.openLoginItemsSettings()
+                }
+            }
             Button(String(localized: "Open onboarding")) {
-                AppServices.shared.permissions.showOnboardingIfNeeded(force: true)
+                AppServices.shared.permissions.presentOnboarding()
             }
             Button(String(localized: "Restore defaults"), role: .destructive) {
                 settings.resetDefaults()
             }
         }
-        .padding()
     }
 }
 
@@ -69,6 +118,7 @@ struct HotkeysSettingsView: View {
             }
         }
         .listStyle(.inset(alternatesRowBackgrounds: true))
+        .frame(minHeight: 360)
     }
 }
 
@@ -107,7 +157,6 @@ struct HotkeyRow: View {
             if press.modifiers.contains(.option) { mods |= UInt32(optionKey) }
             if press.modifiers.contains(.shift) { mods |= UInt32(shiftKey) }
             if press.modifiers.contains(.command) { mods |= UInt32(cmdKey) }
-            // Approximate keycode from character
             let keyCode = Self.keyCode(for: press.key)
             let newBinding = HotkeyBinding(keyCode: keyCode, modifiers: mods, isEnabled: true)
             let conflicts = AppServices.shared.hotkeys.conflicts(for: newBinding, excluding: action)
@@ -162,7 +211,7 @@ struct CaptureSettingsView: View {
                 Text(String(localized: "Combined image")).tag(AllDisplaysMode.combinedImage)
                 Text(String(localized: "Separate files")).tag(AllDisplaysMode.separateFiles)
             }
-        }.padding()
+        }
     }
 }
 
@@ -176,7 +225,7 @@ struct PostCaptureSettingsView: View {
             actionPicker(String(localized: "All displays"), $settings.actionAllDisplays)
             Toggle(String(localized: "Copy PNG and TIFF"), isOn: $settings.copyPNGAndTIFF)
             Toggle(String(localized: "After copy, send ⌘V (requires Accessibility)"), isOn: $settings.autoPasteAfterCopy)
-        }.padding()
+        }
     }
 
     func actionPicker(_ title: String, _ binding: Binding<PostCaptureAction>) -> some View {
@@ -200,7 +249,7 @@ struct EditorSettingsView: View {
             }
             Toggle(String(localized: "Autosave"), isOn: $settings.autosaveEnabled)
             Toggle(String(localized: "Confirm closing unsaved"), isOn: $settings.confirmCloseUnsaved)
-        }.padding()
+        }
     }
 }
 
@@ -209,6 +258,9 @@ struct FilesSettingsView: View {
     var body: some View {
         Form {
             TextField(String(localized: "Save folder"), text: $settings.saveDirectoryPath)
+            Button(String(localized: "Open export folder")) {
+                AppServices.shared.files.openSaveDirectory()
+            }
             TextField(String(localized: "Filename template"), text: $settings.filenameTemplate)
             Text(String(localized: "Preview: \(AppServices.shared.filenames.preview())"))
                 .font(.caption).foregroundStyle(.secondary)
@@ -220,7 +272,7 @@ struct FilesSettingsView: View {
                 Text("PDF").tag("pdf")
             }
             Slider(value: $settings.jpegQuality, in: 0.1...1) { Text("JPEG") }
-        }.padding()
+        }
     }
 }
 
@@ -235,7 +287,7 @@ struct HistorySettingsView: View {
             Stepper(value: $settings.historyLimitDays, in: 1...365) {
                 Text(String(localized: "Days limit: \(settings.historyLimitDays)"))
             }
-        }.padding()
+        }
     }
 }
 
@@ -246,7 +298,8 @@ struct PrivacySettingsView: View {
             Text(String(localized: "ScreenForge does not send data to the internet. No account, telemetry, or cloud."))
             Toggle(String(localized: "Remember app and window name"), isOn: $settings.storeSourceMetadata)
             Toggle(String(localized: "Strip metadata on export"), isOn: $settings.stripExportMetadata)
-        }.padding()
+            Link(String(localized: "Buy Me a Coffee"), destination: SupportLinks.buyMeACoffee)
+        }
     }
 }
 
@@ -257,7 +310,7 @@ struct PermissionsSettingsView: View {
             Button(String(localized: "Open Screen Recording")) { AppServices.shared.permissions.openScreenRecordingSettings() }
             Button(String(localized: "Open Accessibility (optional)")) { AppServices.shared.permissions.openAccessibilitySettings() }
             Button(String(localized: "Request Accessibility")) { AppServices.shared.permissions.requestAccessibility() }
-        }.padding()
+        }
     }
 }
 
@@ -267,19 +320,21 @@ struct AdvancedSettingsView: View {
         Form {
             Toggle(String(localized: "Developer mode (timings)"), isOn: $settings.developerMode)
             Toggle(String(localized: "Experimental scrolling capture"), isOn: $settings.experimentalScrolling)
-        }.padding()
+        }
     }
 }
 
 struct AboutSettingsView: View {
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 12) {
             Text("ScreenForge").font(.title.bold())
-            Text("1.0.0")
+            Text(Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "1.0.0")
+                .foregroundStyle(.secondary)
             Text(String(localized: "A native screenshot tool for macOS. Fully local."))
-            Text("© lokalny projekt")
+            Link(String(localized: "Buy Me a Coffee"), destination: SupportLinks.buyMeACoffee)
+            Link(String(localized: "GitHub"), destination: SupportLinks.githubRepo)
+            Spacer()
         }
-        .padding()
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     }
 }

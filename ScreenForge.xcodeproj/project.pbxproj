@@ -65,6 +65,8 @@
 		E82A53D8ED59ACEC5D7523E5 /* ScrollingCaptureCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7330FE7C141E578FC56C08C3 /* ScrollingCaptureCoordinator.swift */; };
 		EE8000F05A6B719991199684 /* LastRegionStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A51F343AF15E565E605EE07 /* LastRegionStore.swift */; };
 		F2CDC350D2FB5B5D5ABD6473 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 34D50E58C373433DE0C92498 /* OnboardingView.swift */; };
+		A1B2C3D4E5F60718293A4B5C /* PermissionsGateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2C3D4E5F60718293A4B5C6D /* PermissionsGateView.swift */; };
+		F3C4FC607E821D497CF12989 /* MenuBarExtraContent.swift in Sources */ = {isa = PBXBuildFile; fileRef = D79F11F4354012A2F67AD6FA /* MenuBarExtraContent.swift */; };
 		F4098C65176EA3384E09772E /* RegionOverlayWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 17F9BD3B02691D7368FAD9F4 /* RegionOverlayWindowController.swift */; };
 		F9B6F7C13D8EE48623FAF754 /* WindowSelectionCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2290A7B90E174B3721508B47 /* WindowSelectionCoordinator.swift */; };
 		FAA0FD552323780AE490C6E5 /* ClipboardExportService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 78ADE99CE2FE6B45B943DA3D /* ClipboardExportService.swift */; };
@@ -105,6 +107,7 @@
 		2FE8E5D3F3BEAAE5B58633AC /* RenderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RenderTests.swift; sourceTree = "<group>"; };
 		3431CF5455F719D5AFBF9DF9 /* DocsScreenshotRunner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocsScreenshotRunner.swift; sourceTree = "<group>"; };
 		34D50E58C373433DE0C92498 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
+		B2C3D4E5F60718293A4B5C6D /* PermissionsGateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PermissionsGateView.swift; sourceTree = "<group>"; };
 		366BC6EF777FA4C4AAB042F4 /* HistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryView.swift; sourceTree = "<group>"; };
 		3A3ABCBF815A994F8855051D /* RegionSelectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RegionSelectionView.swift; sourceTree = "<group>"; };
 		3FFA0D4628A721F22E2F98D9 /* ScreenCaptureService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenCaptureService.swift; sourceTree = "<group>"; };
@@ -113,6 +116,7 @@
 		4C26A8832EC3FEE9C1CA1E61 /* HotkeyBinding.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HotkeyBinding.swift; sourceTree = "<group>"; };
 		53D8A13B712E9EE0DD12C919 /* CanvasObject.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CanvasObject.swift; sourceTree = "<group>"; };
 		58C2062ECD3217218090D0E8 /* CaptureHistoryRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureHistoryRepository.swift; sourceTree = "<group>"; };
+		5A755F550B54558D46F5EE94 /* ScreenForge.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = ScreenForge.entitlements; sourceTree = "<group>"; };
 		5BC683CBFA6AF5F4D68E6F2C /* HotkeyConflictTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HotkeyConflictTests.swift; sourceTree = "<group>"; };
 		693E708060B1B5CBBDA49D05 /* SupportLinks.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SupportLinks.swift; sourceTree = "<group>"; };
 		6A544D4A1A04BC35A4DE7281 /* ProjectDocumentSerializer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectDocumentSerializer.swift; sourceTree = "<group>"; };
@@ -142,6 +146,7 @@
 		C5F0130784489800500B3B20 /* CanvasView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CanvasView.swift; sourceTree = "<group>"; };
 		C89A6924C45FDC2A3E7C4FB8 /* EditorDocumentTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorDocumentTests.swift; sourceTree = "<group>"; };
 		CD9C5E03ED074450CE161B1B /* PerformanceMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PerformanceMonitor.swift; sourceTree = "<group>"; };
+		D79F11F4354012A2F67AD6FA /* MenuBarExtraContent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarExtraContent.swift; sourceTree = "<group>"; };
 		DA4993030959AE74C4C1CDFE /* ScreenCaptureKitProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenCaptureKitProvider.swift; sourceTree = "<group>"; };
 		DC7EFEC5A8152FCAB2978B89 /* UpdateController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdateController.swift; sourceTree = "<group>"; };
 		DF3DEE28B1588339BECEBE9A /* SharingService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharingService.swift; sourceTree = "<group>"; };
@@ -202,6 +207,7 @@
 				7253A541E9FA0D28CBA9457C /* AppIcon.icns */,
 				2470D98460ABDB2F318116B3 /* Assets.xcassets */,
 				713244C86DD708CD82188503 /* Info.plist */,
+				5A755F550B54558D46F5EE94 /* ScreenForge.entitlements */,
 				363E0BA9F9EE31618A66A0EE /* Localizable.strings */,
 			);
 			path = Resources;
@@ -434,6 +440,7 @@
 			isa = PBXGroup;
 			children = (
 				F2A431F37CA9EA71D97BA793 /* MenuBarController.swift */,
+				D79F11F4354012A2F67AD6FA /* MenuBarExtraContent.swift */,
 			);
 			path = MenuBar;
 			sourceTree = "<group>";
@@ -492,6 +499,7 @@
 			isa = PBXGroup;
 			children = (
 				34D50E58C373433DE0C92498 /* OnboardingView.swift */,
+				B2C3D4E5F60718293A4B5C6D /* PermissionsGateView.swift */,
 			);
 			path = Onboarding;
 			sourceTree = "<group>";
@@ -677,9 +685,11 @@
 				EE8000F05A6B719991199684 /* LastRegionStore.swift in Sources */,
 				248A107F811BD4BF6A6DD8B3 /* LaunchAtLoginService.swift in Sources */,
 				C76BDC81010112378FFA6073 /* MenuBarController.swift in Sources */,
+				F3C4FC607E821D497CF12989 /* MenuBarExtraContent.swift in Sources */,
 				936189C08BF1353035D2988F /* NotificationService.swift in Sources */,
 				7DB72742DD0C88343FEAD8A4 /* OCRService.swift in Sources */,
 				F2CDC350D2FB5B5D5ABD6473 /* OnboardingView.swift in Sources */,
+				A1B2C3D4E5F60718293A4B5C /* PermissionsGateView.swift in Sources */,
 				4CE9D88B561C5F7D520DE23C /* PerformanceMonitor.swift in Sources */,
 				D7E794032AD6BFCBB1E8888D /* PermissionManager.swift in Sources */,
 				4E186773600F9C80DBE110CB /* PresetStore.swift in Sources */,
@@ -736,6 +746,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = ScreenForge/Resources/ScreenForge.entitlements;
 				COMBINE_HIDPI_IMAGES = YES;
 				ENABLE_TESTABILITY = YES;
 				GENERATE_INFOPLIST_FILE = NO;
@@ -746,7 +757,7 @@
 				OTHER_LDFLAGS = (
 					"-lsqlite3",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.local.ScreenForge;
+				PRODUCT_BUNDLE_IDENTIFIER = com.screenforge.app;
 				PRODUCT_NAME = ScreenForge;
 				SDKROOT = macosx;
 				SWIFT_STRICT_CONCURRENCY = minimal;
@@ -757,6 +768,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = ScreenForge/Resources/ScreenForge.entitlements;
 				COMBINE_HIDPI_IMAGES = YES;
 				ENABLE_TESTABILITY = YES;
 				GENERATE_INFOPLIST_FILE = NO;
@@ -767,7 +779,7 @@
 				OTHER_LDFLAGS = (
 					"-lsqlite3",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.local.ScreenForge;
+				PRODUCT_BUNDLE_IDENTIFIER = com.screenforge.app;
 				PRODUCT_NAME = ScreenForge;
 				SDKROOT = macosx;
 				SWIFT_STRICT_CONCURRENCY = minimal;
