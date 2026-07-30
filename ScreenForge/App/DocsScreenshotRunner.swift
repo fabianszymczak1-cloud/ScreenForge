@@ -75,7 +75,7 @@ enum DocsScreenshotRunner {
             .sorted { $0.frame.width * $0.frame.height > $1.frame.width * $1.frame.height }
             .first
         if let editorWin, let img = captureWindow(editorWin) {
-            writePNG(img, to: outDir.appendingPathComponent("editor.png"))
+            writePNG(img, to: outDir.appendingPathComponent("editor-hero.png"))
             print("Wrote editor.png")
         } else {
             print("WARN: editor window not captured")
@@ -91,7 +91,7 @@ enum DocsScreenshotRunner {
         settingsWindow.makeKeyAndOrderFront(nil)
         await settle(0.7)
         if let img = captureWindow(settingsWindow) {
-            writePNG(img, to: outDir.appendingPathComponent("settings.png"))
+            writePNG(img, to: outDir.appendingPathComponent("settings-general.png"))
             print("Wrote settings.png")
         } else {
             print("WARN: settings window not captured")
@@ -108,13 +108,13 @@ enum DocsScreenshotRunner {
                 || $0.title.localizedCaseInsensitiveContains("Historia")
                 || ($0.frame.width >= 680 && $0.frame.width <= 800))
         }), let img = captureWindow(hist) {
-            writePNG(img, to: outDir.appendingPathComponent("history.png"))
+            writePNG(img, to: outDir.appendingPathComponent("history-list.png"))
             print("Wrote history.png")
         }
         services.history.reloadFromDisk()
 
         if let menuImg = makeMenuBarShowcaseImage() {
-            writePNG(menuImg, to: outDir.appendingPathComponent("menu.png"))
+            writePNG(menuImg, to: outDir.appendingPathComponent("menu-bar.png"))
             print("Wrote menu.png")
         }
 
