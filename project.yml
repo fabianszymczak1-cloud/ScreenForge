@@ -47,14 +47,16 @@ targets:
         INFOPLIST_KEY_CFBundleIconFile: AppIcon
         INFOPLIST_KEY_CFBundleIconName: AppIcon
         LD_RUNPATH_SEARCH_PATHS: "@executable_path/../Frameworks"
+        MARKETING_VERSION: "1.0.2"
+        CURRENT_PROJECT_VERSION: "1.0.2"
     info:
       path: ScreenForge/Resources/Info.plist
       properties:
         CFBundleName: ScreenForge
         CFBundleDisplayName: ScreenForge
         CFBundleIdentifier: com.screenforge.app
-        CFBundleShortVersionString: "1.0.0"
-        CFBundleVersion: "1"
+        CFBundleShortVersionString: "$(MARKETING_VERSION)"
+        CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
         CFBundleDevelopmentRegion: en
         CFBundleLocalizations: [en, pl]
         LSMinimumSystemVersion: "26.0"

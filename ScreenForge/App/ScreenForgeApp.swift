@@ -1,14 +1,25 @@
 import SwiftUI
 import AppKit
+import CoreGraphics
 
 @main
 struct ScreenForgeApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
+    @ObservedObject private var settings = AppServices.shared.settings
 
     var body: some Scene {
+        MenuBarExtra(
+            "ScreenForge",
+            systemImage: "camera.viewfinder",
+            isInserted: $settings.showMenuBarIcon
+        ) {
+            MenuBarExtraContent()
+        }
+        .menuBarExtraStyle(.menu)
+
         Settings {
             SettingsRootView()
-                .environmentObject(AppServices.shared.settings)
+                .environmentObject(settings)
         }
     }
 }
@@ -18,18 +29,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     static weak var shared: AppDelegate?
 
     private var lifecycle: AppLifecycleController?
-    /// Strong ref — exact PasteRush pattern; must outlive the status bar.
-    private var statusItem: NSStatusItem?
+    private var menuBarVisibilityCheckTask: Task<Void, Never>?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         Self.shared = self
         PerformanceMonitor.shared.log("app.launch")
         let services = AppServices.shared
 
-        // PasteRush order: accessory → status item → Sparkle → everything else.
         NSApp.setActivationPolicy(.accessory)
 
-        // Menu-bar-only app: never keep a persisted dock preference.
         if services.settings.showDockIcon {
             services.settings.showDockIcon = false
         }
@@ -37,9 +45,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             services.settings.showMenuBarIcon = true
         }
 
-        setupStatusItem()
+        migrateStaleMenuBarDefaultsIfNeeded()
 
-        // Start Sparkle after the status item exists (PasteRush order).
         UpdateController.shared.start()
 
         if services.settings.launchAtLogin {
@@ -48,6 +55,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         lifecycle = AppLifecycleController(services: services)
         lifecycle?.start()
+
+        scheduleMenuBarVisibilityCheck()
 
         if ProcessInfo.processInfo.arguments.contains("--smoke-test") {
             services.settings.hasCompletedOnboarding = true
@@ -64,75 +73,101 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
-    /// Settings toggle: show/hide. Launch always calls `setupStatusItem()` directly.
-    func applyMenuBarIconPreference() {
-        if AppServices.shared.settings.showMenuBarIcon {
-            if statusItem == nil {
-                setupStatusItem()
-            } else {
-                statusItem?.isVisible = true
+    /// One-shot: clear Tahoe/Control Center leftovers from NSStatusItem + old bundle ID.
+    private func migrateStaleMenuBarDefaultsIfNeeded() {
+        let flagKey = "sf.menubarMigrationTahoe"
+        let defaults = UserDefaults.standard
+        guard defaults.bool(forKey: flagKey) == false else { return }
+
+        let domains = ["com.screenforge.app", "com.local.ScreenForge"]
+        for domain in domains {
+            guard let persistent = UserDefaults(suiteName: domain) else { continue }
+            let dict = persistent.dictionaryRepresentation()
+            for key in dict.keys where key.hasPrefix("NSStatusItem ") {
+                persistent.removeObject(forKey: key)
+                DiagnosticLog.shared.info("menubar.migrate removed \(domain).\(key)")
             }
-        } else if let item = statusItem {
-            NSStatusBar.system.removeStatusItem(item)
-            statusItem = nil
+            persistent.synchronize()
+        }
+
+        // Also scrub current standard defaults (same as com.screenforge.app when running).
+        let std = defaults.dictionaryRepresentation()
+        for key in std.keys where key.hasPrefix("NSStatusItem ") {
+            defaults.removeObject(forKey: key)
+            DiagnosticLog.shared.info("menubar.migrate removed standard.\(key)")
+        }
+
+        defaults.set(true, forKey: flagKey)
+        DiagnosticLog.shared.info("menubar.migrate done")
+    }
+
+    private func scheduleMenuBarVisibilityCheck() {
+        menuBarVisibilityCheckTask?.cancel()
+        menuBarVisibilityCheckTask = Task { @MainActor in
+            try? await Task.sleep(nanoseconds: 1_200_000_000)
+            guard !Task.isCancelled else { return }
+            guard AppServices.shared.settings.showMenuBarIcon else { return }
+            if hasOnScreenMenuBarPresence() {
+                DiagnosticLog.shared.info("menubar.visible.onScreen=true")
+                return
+            }
+            DiagnosticLog.shared.warn("menubar.visible.onScreen=false — prompting Menu Bar settings")
+            presentMenuBarAllowAlertIfNeeded()
         }
     }
 
-    /// Mirror PasteRushApp.setupStatusItem() as closely as possible.
-    private func setupStatusItem() {
-        if statusItem == nil {
-            statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
+    /// Best-effort: MenuBarExtra may be hosted by Control Center; still detect off-screen proxies.
+    private func hasOnScreenMenuBarPresence() -> Bool {
+        let pid = ProcessInfo.processInfo.processIdentifier
+        let opts = CGWindowListOption(arrayLiteral: .optionOnScreenOnly, .excludeDesktopElements)
+        guard let infoList = CGWindowListCopyWindowInfo(opts, kCGNullWindowID) as? [[String: Any]] else {
+            return false
         }
-        statusItem?.isVisible = true
-        if let button = statusItem?.button {
-            let image = NSImage(systemSymbolName: "camera.viewfinder", accessibilityDescription: "ScreenForge")
-            image?.isTemplate = true
-            button.image = image
-            button.toolTip = "ScreenForge"
-            DiagnosticLog.shared.info(
-                "statusItem.ready button=\(button) image=\(image != nil) visible=\(statusItem?.isVisible == true)"
-            )
-        } else {
-            DiagnosticLog.shared.error("statusItem.button is nil — menu bar icon missing")
+        for info in infoList {
+            guard let ownerPID = info[kCGWindowOwnerPID as String] as? pid_t, ownerPID == pid else { continue }
+            let layer = info[kCGWindowLayer as String] as? Int ?? 0
+            guard layer >= 24 else { continue }
+            if let bounds = info[kCGWindowBounds as String] as? [String: Any] {
+                let y = (bounds["Y"] as? CGFloat) ?? (bounds["Y"] as? Double).map { CGFloat($0) } ?? -1
+                if y >= 0 { return true }
+            }
         }
-        statusItem?.menu = buildMenu(services: AppServices.shared)
+
+        // Fallback: any NSStatusItem-style button window with a real screen.
+        for window in NSApp.windows {
+            guard window.level.rawValue >= NSWindow.Level.statusBar.rawValue - 1 else { continue }
+            if window.screen != nil, window.frame.origin.y >= 0 { return true }
+        }
+        return false
     }
 
-    private func buildMenu(services: AppServices) -> NSMenu {
-        let menu = NSMenu()
-        let mb = services.menuBar
-        func item(_ title: String, _ sel: Selector, key: String = "") -> NSMenuItem {
-            let i = NSMenuItem(title: title, action: sel, keyEquivalent: key)
-            i.target = mb
-            return i
+    private func presentMenuBarAllowAlertIfNeeded() {
+        let key = "sf.menubarBlockedAlertShown"
+        guard UserDefaults.standard.bool(forKey: key) == false else { return }
+        UserDefaults.standard.set(true, forKey: key)
+
+        let alert = NSAlert()
+        alert.messageText = String(localized: "Menu bar icon is hidden")
+        alert.informativeText = String(localized: "macOS may be blocking ScreenForge in System Settings → Menu Bar. Set ScreenForge to Allow, then relaunch the app.")
+        alert.addButton(withTitle: String(localized: "Open Menu Bar settings"))
+        alert.addButton(withTitle: String(localized: "Later"))
+        let response = alert.runModal()
+        if response == .alertFirstButtonReturn {
+            openMenuBarSettings()
         }
-        menu.addItem(item(String(localized: "Capture region"), #selector(MenuBarController.captureRegion)))
-        menu.addItem(item(String(localized: "Capture window"), #selector(MenuBarController.captureWindow)))
-        menu.addItem(item(String(localized: "Capture active display"), #selector(MenuBarController.captureDisplay)))
-        menu.addItem(item(String(localized: "Capture all displays"), #selector(MenuBarController.captureAll)))
-        menu.addItem(item(String(localized: "Capture last region"), #selector(MenuBarController.captureLast)))
-        menu.addItem(item(String(localized: "Capture with delay"), #selector(MenuBarController.captureDelayed)))
-        menu.addItem(.separator())
-        menu.addItem(item(String(localized: "Open history"), #selector(MenuBarController.showHistory)))
-        let openFile = item(String(localized: "Open image from file…"), #selector(MenuBarController.openFile), key: "o")
-        openFile.keyEquivalentModifierMask = [.command]
-        menu.addItem(openFile)
-        menu.addItem(item(String(localized: "Open image from clipboard"), #selector(MenuBarController.openClipboard)))
-        menu.addItem(item(String(localized: "Last capture"), #selector(MenuBarController.openLast)))
-        menu.addItem(.separator())
-        let settings = item(String(localized: "Settings…"), #selector(MenuBarController.showSettings), key: ",")
-        settings.keyEquivalentModifierMask = [.command]
-        menu.addItem(settings)
-        menu.addItem(item(String(localized: "Launch at login"), #selector(MenuBarController.toggleLogin)))
-        menu.addItem(item(String(localized: "Check permissions"), #selector(MenuBarController.checkPermissions)))
-        menu.addItem(item(String(localized: "About"), #selector(MenuBarController.showAbout)))
-        menu.addItem(item(String(localized: "Check for Updates…"), #selector(MenuBarController.checkForUpdates)))
-        menu.addItem(item(String(localized: "Buy Me a Coffee"), #selector(MenuBarController.openSupport)))
-        menu.addItem(.separator())
-        let quit = item(String(localized: "Quit"), #selector(MenuBarController.quit), key: "q")
-        quit.keyEquivalentModifierMask = [.command]
-        menu.addItem(quit)
-        return menu
+    }
+
+    func openMenuBarSettings() {
+        let urls = [
+            "x-apple.systempreferences:com.apple.ControlCenter-Settings.extension",
+            "x-apple.systempreferences:com.apple.preference.dock?menuBar"
+        ]
+        for s in urls {
+            if let url = URL(string: s) {
+                NSWorkspace.shared.open(url)
+                return
+            }
+        }
     }
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
@@ -140,6 +175,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationWillTerminate(_ notification: Notification) {
+        menuBarVisibilityCheckTask?.cancel()
         lifecycle?.prepareForTermination()
     }
 

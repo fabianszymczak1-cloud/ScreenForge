@@ -112,6 +112,10 @@
 "Magnifier zoom" = "Magnifier zoom";
 "Magnify" = "Magnify";
 "Menu bar icon" = "Menu bar icon";
+"Menu bar icon is hidden" = "Menu bar icon is hidden";
+"macOS may be blocking ScreenForge in System Settings → Menu Bar. Set ScreenForge to Allow, then relaunch the app." = "macOS may be blocking ScreenForge in System Settings → Menu Bar. Set ScreenForge to Allow, then relaunch the app.";
+"Open Menu Bar settings" = "Open Menu Bar settings";
+"Later" = "Later";
 "Name" = "Name";
 "No limit" = "No limit";
 "No saved objects" = "No saved objects";

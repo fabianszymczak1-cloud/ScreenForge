@@ -53,7 +53,7 @@ final class SettingsStore: ObservableObject {
     @Published var showMenuBarIcon: Bool {
         didSet {
             d.set(showMenuBarIcon, forKey: prefix + "menubar")
-            AppDelegate.shared?.applyMenuBarIconPreference()
+            // MenuBarExtra isInserted binds to this property.
         }
     }
     /// Desired launch-at-login preference (persisted). Actual SMAppService state may lag

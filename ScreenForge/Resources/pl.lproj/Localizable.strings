@@ -112,6 +112,10 @@
 "Magnifier zoom" = "Powiększenie lupy";
 "Magnify" = "Powiększenie";
 "Menu bar icon" = "Ikona menu bar";
+"Menu bar icon is hidden" = "Ikona w pasku menu jest ukryta";
+"macOS may be blocking ScreenForge in System Settings → Menu Bar. Set ScreenForge to Allow, then relaunch the app." = "macOS może blokować ScreenForge w Ustawieniach systemowych → Pasek menu. Ustaw ScreenForge na Zezwalaj, a potem uruchom aplikację ponownie.";
+"Open Menu Bar settings" = "Otwórz ustawienia paska menu";
+"Later" = "Później";
 "Name" = "Nazwa";
 "No limit" = "Bez limitu";
 "No saved objects" = "Brak zapisanych obiektów";
