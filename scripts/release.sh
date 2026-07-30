@@ -34,13 +34,15 @@ if [[ -z "$SIGN_UPDATE" ]]; then
   exit 1
 fi
 
-"$ROOT/Scripts/make_dmg.sh" "$VERSION"
+"$ROOT/scripts/make_dmg.sh" "$VERSION"
 DMG="$ROOT/build/dmg/ScreenForge.dmg"
 
-# Optional smoke
+# Optional smoke (bounded — UI alerts must not hang release)
 if [[ -x "$ROOT/build/DerivedData/Build/Products/Release/ScreenForge.app/Contents/MacOS/ScreenForge" ]]; then
   echo "==> Smoke test"
-  "$ROOT/build/DerivedData/Build/Products/Release/ScreenForge.app/Contents/MacOS/ScreenForge" --smoke-test || true
+  perl -e 'alarm 45; exec @ARGV' \
+    "$ROOT/build/DerivedData/Build/Products/Release/ScreenForge.app/Contents/MacOS/ScreenForge" \
+    --smoke-test || true
 fi
 
 echo "==> Signing update with Sparkle"

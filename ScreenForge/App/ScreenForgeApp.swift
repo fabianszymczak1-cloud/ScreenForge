@@ -73,28 +73,29 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
+    private var isAutomatedRun: Bool {
+        let args = ProcessInfo.processInfo.arguments
+        return args.contains("--smoke-test") || args.contains("--docs-screenshots")
+    }
+
     /// One-shot: clear Tahoe/Control Center leftovers from NSStatusItem + old bundle ID.
     private func migrateStaleMenuBarDefaultsIfNeeded() {
         let flagKey = "sf.menubarMigrationTahoe"
         let defaults = UserDefaults.standard
         guard defaults.bool(forKey: flagKey) == false else { return }
 
-        let domains = ["com.screenforge.app", "com.local.ScreenForge"]
-        for domain in domains {
-            guard let persistent = UserDefaults(suiteName: domain) else { continue }
-            let dict = persistent.dictionaryRepresentation()
-            for key in dict.keys where key.hasPrefix("NSStatusItem ") {
-                persistent.removeObject(forKey: key)
-                DiagnosticLog.shared.info("menubar.migrate removed \(domain).\(key)")
+        func scrub(_ store: UserDefaults, label: String) {
+            for key in store.dictionaryRepresentation().keys where key.hasPrefix("NSStatusItem ") {
+                store.removeObject(forKey: key)
+                DiagnosticLog.shared.info("menubar.migrate removed \(label).\(key)")
             }
-            persistent.synchronize()
+            store.synchronize()
         }
 
-        // Also scrub current standard defaults (same as com.screenforge.app when running).
-        let std = defaults.dictionaryRepresentation()
-        for key in std.keys where key.hasPrefix("NSStatusItem ") {
-            defaults.removeObject(forKey: key)
-            DiagnosticLog.shared.info("menubar.migrate removed standard.\(key)")
+        scrub(defaults, label: "standard")
+        // Legacy bundle ID domain (separate prefs file).
+        if let legacy = UserDefaults(suiteName: "com.local.ScreenForge") {
+            scrub(legacy, label: "com.local.ScreenForge")
         }
 
         defaults.set(true, forKey: flagKey)
@@ -102,6 +103,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func scheduleMenuBarVisibilityCheck() {
+        guard !isAutomatedRun else { return }
         menuBarVisibilityCheckTask?.cancel()
         menuBarVisibilityCheckTask = Task { @MainActor in
             try? await Task.sleep(nanoseconds: 1_200_000_000)
