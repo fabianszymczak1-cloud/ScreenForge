@@ -22,13 +22,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// Strong ref — PasteRush pattern; must outlive the status bar.
     private var statusItem: NSStatusItem?
     private var menuBarVisibilityCheckTask: Task<Void, Never>?
+    private let statusAutosaveName = "ScreenForgeMainStatusItem"
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         Self.shared = self
         PerformanceMonitor.shared.log("app.launch")
         let services = AppServices.shared
 
-        // Exact PasteRush order: accessory → status item → Sparkle → rest.
         NSApp.setActivationPolicy(.accessory)
 
         if services.settings.showDockIcon {
@@ -38,6 +38,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             services.settings.showMenuBarIcon = true
         }
 
+        seedStatusItemVisibilityDefaults()
         setupStatusItem()
         UpdateController.shared.start()
 
@@ -70,6 +71,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         return args.contains("--smoke-test") || args.contains("--docs-screenshots")
     }
 
+    /// Pre-seed Control Center visibility so Tahoe does not create an ephemeral/hidden item.
+    private func seedStatusItemVisibilityDefaults() {
+        let d = UserDefaults.standard
+        d.set(true, forKey: "NSStatusItem Visible \(statusAutosaveName)")
+        d.set(true, forKey: "NSStatusItem VisibleCC \(statusAutosaveName)")
+        d.set(true, forKey: "NSStatusItem Visible Item-0")
+        d.set(true, forKey: "NSStatusItem VisibleCC Item-0")
+    }
+
     func applyMenuBarIconPreference() {
         if AppServices.shared.settings.showMenuBarIcon {
             if statusItem == nil {
@@ -83,26 +93,30 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
-    /// Mirror PasteRushApp.setupStatusItem() closely; new autosaveName escapes Tahoe ghosts.
     private func setupStatusItem() {
-        if statusItem == nil {
-            statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
-            // Fresh identity so Control Center does not reuse a blocked Item-0 mapping.
-            statusItem?.autosaveName = "ScreenForgeMainStatusItem"
+        if let existing = statusItem {
+            NSStatusBar.system.removeStatusItem(existing)
+            statusItem = nil
         }
-        statusItem?.isVisible = true
-        if let button = statusItem?.button {
+
+        seedStatusItemVisibilityDefaults()
+
+        let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
+        item.autosaveName = statusAutosaveName
+        item.isVisible = true
+        if let button = item.button {
             let image = NSImage(systemSymbolName: "camera.viewfinder", accessibilityDescription: "ScreenForge")
             image?.isTemplate = true
             button.image = image
             button.toolTip = "ScreenForge"
             DiagnosticLog.shared.info(
-                "statusItem.ready image=\(image != nil) visible=\(statusItem?.isVisible == true) screen=\(String(describing: button.window?.screen != nil))"
+                "statusItem.ready image=\(image != nil) visible=\(item.isVisible) screen=\(button.window?.screen != nil) frame=\(String(describing: button.window?.frame))"
             )
         } else {
             DiagnosticLog.shared.error("statusItem.button is nil")
         }
-        statusItem?.menu = buildMenu(services: AppServices.shared)
+        item.menu = buildMenu(services: AppServices.shared)
+        statusItem = item
     }
 
     private func buildMenu(services: AppServices) -> NSMenu {
@@ -142,32 +156,47 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         return menu
     }
 
+    private func isStatusItemOnScreen() -> Bool {
+        guard let button = statusItem?.button, let window = button.window else { return false }
+        return window.screen != nil && window.frame.origin.y >= 0
+    }
+
     private func scheduleMenuBarVisibilityCheck() {
         guard !isAutomatedRun else { return }
         menuBarVisibilityCheckTask?.cancel()
         menuBarVisibilityCheckTask = Task { @MainActor in
-            try? await Task.sleep(nanoseconds: 1_500_000_000)
-            guard !Task.isCancelled else { return }
-            guard AppServices.shared.settings.showMenuBarIcon else { return }
+            // Tahoe often parks the item at y=-22 shortly after creation — retry recreate.
+            for attempt in 1...4 {
+                try? await Task.sleep(nanoseconds: 800_000_000)
+                guard !Task.isCancelled else { return }
+                guard AppServices.shared.settings.showMenuBarIcon else { return }
 
-            let button = statusItem?.button
-            let onScreen = button?.window?.screen != nil
-                && (button?.window?.frame.origin.y ?? -1) >= 0
-            DiagnosticLog.shared.info(
-                "menubar.check visible=\(statusItem?.isVisible == true) onScreen=\(onScreen) frame=\(String(describing: button?.window?.frame))"
-            )
-            if onScreen { return }
-            presentMenuBarAllowAlertIfNeeded()
+                let onScreen = isStatusItemOnScreen()
+                DiagnosticLog.shared.info(
+                    "menubar.check#\(attempt) onScreen=\(onScreen) frame=\(String(describing: statusItem?.button?.window?.frame))"
+                )
+                if onScreen { return }
+
+                DiagnosticLog.shared.warn("menubar.recreate attempt \(attempt)")
+                setupStatusItem()
+            }
+
+            guard !isStatusItemOnScreen() else { return }
+
+            // Last resort: show Dock so the app is not invisible, and guide Menu Bar settings.
+            DiagnosticLog.shared.error("menubar.stillHidden — enabling Dock fallback")
+            NSApp.setActivationPolicy(.regular)
+            NSApp.activate(ignoringOtherApps: true)
+            presentMenuBarAllowAlert()
         }
     }
 
-    private func presentMenuBarAllowAlertIfNeeded() {
+    private func presentMenuBarAllowAlert() {
         let alert = NSAlert()
         alert.messageText = String(localized: "Menu bar icon is hidden")
         alert.informativeText = String(localized: "macOS may be blocking ScreenForge in System Settings → Menu Bar. Set ScreenForge to Allow, then relaunch the app.")
         alert.addButton(withTitle: String(localized: "Open Menu Bar settings"))
         alert.addButton(withTitle: String(localized: "Later"))
-        NSApp.activate(ignoringOtherApps: true)
         let response = alert.runModal()
         if response == .alertFirstButtonReturn {
             openMenuBarSettings()
