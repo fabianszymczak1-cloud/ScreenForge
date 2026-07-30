@@ -4,8 +4,8 @@
 
 | Element | Ścieżka |
 |---------|---------|
-| Kod źródłowy | `/Users/fabian/Desktop/Projekty/Greenshot copy/ScreenForge/ScreenForge/` |
-| Projekt Xcode | `/Users/fabian/Desktop/Projekty/Greenshot copy/ScreenForge/ScreenForge.xcodeproj` |
+| Kod źródłowy | `ScreenForge/` |
+| Projekt Xcode | `ScreenForge.xcodeproj` |
 | Gotowe `.app` | `/Applications/ScreenForge.app` |
 | Release build | `ScreenForge/build/DerivedData/Build/Products/Release/ScreenForge.app` |
 

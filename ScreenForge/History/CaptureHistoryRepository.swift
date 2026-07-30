@@ -89,6 +89,15 @@ final class CaptureHistoryRepository: ObservableObject {
 
     func latest() -> CaptureHistoryEntry? { entries.first }
 
+    /// Docs / tests only — replace the in-memory list without touching the database.
+    func replaceEntriesForDocs(_ entries: [CaptureHistoryEntry]) {
+        self.entries = entries
+    }
+
+    func reloadFromDisk() {
+        reload()
+    }
+
     func delete(_ id: UUID) {
         guard let db else { return }
         if let entry = entries.first(where: { $0.id == id }) {

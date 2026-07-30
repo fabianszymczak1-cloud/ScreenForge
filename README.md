@@ -89,6 +89,8 @@ If something still fails, make sure the app is in `/Applications` and not sittin
 
 ## Keyboard shortcuts
 
+These are the **defaults**. You can change every shortcut in **Settings → Shortcuts**.
+
 | Shortcut | Action |
 |----------|--------|
 | ⌃⇧1 | Region → editor |
@@ -112,7 +114,7 @@ ScreenForge is free. Tips keep the project going:
 
 ## Auto-updates
 
-Use **bar **Check for Updates…**. Updates are signed with Sparkle (EdDSA) and served from GitHub Releases.
+Use the menu item **Check for Updates…**. Updates are signed with Sparkle (EdDSA) and served from GitHub Releases.
 
 ## Build from source
 
@@ -132,4 +134,4 @@ Release (needs `gh` auth + Sparkle private key in `Secrets/`):
 
 ## License
 
-Original code for this project. Not affiliated with Greenshot.
+[MIT](LICENSE)
