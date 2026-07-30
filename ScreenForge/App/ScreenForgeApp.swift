@@ -82,6 +82,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
+    /// Recreate the status item so System Settings → Menu Bar can list ScreenForge.
+    func reRegisterStatusItemForMenuBarAllowList() {
+        AppServices.shared.settings.showMenuBarIcon = true
+        // Brief regular activation helps Tahoe register the agent in the allow-list UI.
+        NSApp.setActivationPolicy(.regular)
+        setupStatusItem()
+        statusItem?.isVisible = true
+        NSApp.activate(ignoringOtherApps: true)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+            NSApp.setActivationPolicy(.accessory)
+        }
+    }
+
     private func setupStatusItem() {
         if let existing = statusItem {
             NSStatusBar.system.removeStatusItem(existing)

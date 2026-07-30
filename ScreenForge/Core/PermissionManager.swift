@@ -87,7 +87,11 @@ final class PermissionManager: NSObject, ObservableObject, NSWindowDelegate {
     }
 
     func openMenuBarSettings() {
+        // Ensure Control Center / Menu Bar allow-list can see this running agent.
+        AppDelegate.shared?.reRegisterStatusItemForMenuBarAllowList()
+
         let urls = [
+            "x-apple.systempreferences:com.apple.MenuBarSettings",
             "x-apple.systempreferences:com.apple.ControlCenter-Settings.extension",
             "x-apple.systempreferences:com.apple.preference.dock?menuBar"
         ]

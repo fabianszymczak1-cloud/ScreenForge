@@ -66,13 +66,17 @@ struct OnboardingView: View {
                 case 2:
                     VStack(alignment: .leading, spacing: 12) {
                         Text(String(localized: "Allow ScreenForge in Menu Bar so the camera icon stays visible."))
-                        Text(String(localized: "macOS 26 keeps menu bar apps behind System Settings → Menu Bar. Turn ScreenForge on, then come back."))
+                        Text(String(localized: "In System Settings open Menu Bar, then scroll to “Allow in the Menu Bar” (Zezwalaj w pasku menu). ScreenForge appears only while the app is running."))
                             .font(.callout)
                             .foregroundStyle(.secondary)
                         Button(String(localized: "Open Menu Bar settings")) {
                             permissions.openMenuBarSettings()
                         }
-                        Text(String(localized: "After enabling, look for the camera.viewfinder icon next to other menu bar apps. If it is missing, toggle ScreenForge off and on once."))
+                        Button(String(localized: "Register again in Menu Bar list")) {
+                            AppDelegate.shared?.reRegisterStatusItemForMenuBarAllowList()
+                            permissions.openMenuBarSettings()
+                        }
+                        Text(String(localized: "If ScreenForge is still missing from the list, quit other copies, eject any ScreenForge DMG, open only /Applications/ScreenForge.app, then tap Register again."))
                             .font(.callout)
                             .foregroundStyle(.secondary)
                     }
