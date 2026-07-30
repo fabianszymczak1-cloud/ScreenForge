@@ -8,7 +8,43 @@ import SwiftUI
 /// Opens real UI windows and writes PNG screenshots into `docs/screenshots/` for the README.
 @MainActor
 enum DocsScreenshotRunner {
+    /// Shared top-left image-space layout for the checkout demo + matching annotations.
+    private struct CheckoutLayout {
+        let size: CGSize
+        let card: CGRect
+        let taxRow: CGRect
+        let totalRow: CGRect
+        let emailValue: CGRect
+        let callout: CGRect
+        let arrowStart: CGPoint
+        let arrowEnd: CGPoint
+
+        static func make(width: Int, height: Int) -> CheckoutLayout {
+            let w = CGFloat(width), h = CGFloat(height)
+            let card = CGRect(x: w * 0.12, y: h * 0.10, width: w * 0.76, height: h * 0.78)
+            // Rows under "Order summary" (top-left image coords).
+            let taxRow = CGRect(x: card.minX + 28, y: card.minY + 188, width: 520, height: 36)
+            let totalRow = CGRect(x: card.minX + 28, y: card.minY + 228, width: 520, height: 36)
+            let emailValue = CGRect(x: card.minX + 28, y: card.minY + 318, width: 340, height: 28)
+            let callout = CGRect(x: card.maxX - 360, y: totalRow.minY - 8, width: 320, height: 88)
+            return CheckoutLayout(
+                size: CGSize(width: w, height: h),
+                card: card,
+                taxRow: taxRow,
+                totalRow: totalRow,
+                emailValue: emailValue,
+                callout: callout,
+                arrowStart: CGPoint(x: callout.minX - 8, y: callout.midY),
+                arrowEnd: CGPoint(x: totalRow.maxX - 40, y: totalRow.midY)
+            )
+        }
+    }
+
     static func run(services: AppServices) async {
+        // README shots should be English regardless of the developer's system language.
+        UserDefaults.standard.set(["en"], forKey: "AppleLanguages")
+        UserDefaults.standard.synchronize()
+
         services.settings.hasCompletedOnboarding = true
         services.settings.showDockIcon = true
         NSApp.setActivationPolicy(.regular)
@@ -17,32 +53,47 @@ enum DocsScreenshotRunner {
         let outDir = resolveOutputDirectory()
         try? FileManager.default.createDirectory(at: outDir, withIntermediateDirectories: true)
 
-        // --- Editor (rich demo capture under annotations) ---
-        let base = makeBugReportDemoImage(width: 1440, height: 900)
+        // --- Editor (annotations aligned to the same layout as the demo UI) ---
+        let layout = CheckoutLayout.make(width: 1440, height: 900)
+        let base = makeBugReportDemoImage(layout: layout)
         let doc = EditorDocument(baseImage: base)
 
-        var arrow = CanvasObject(
-            type: .arrow,
-            frame: CGRect(x: 780, y: 250, width: 280, height: 90),
-            style: ObjectStyle(strokeColor: .systemRed, fillColor: .clear, strokeWidth: 4)
+        var blur = CanvasObject(
+            type: .blur,
+            frame: layout.emailValue.insetBy(dx: -6, dy: -4),
+            style: ObjectStyle()
         )
-        arrow.points = [CGPoint(x: 1020, y: 260), CGPoint(x: 820, y: 320)]
-        doc.addObject(arrow, recordUndo: false)
+        blur.filterKind = .blur
+        blur.filterAmount = 16
+        doc.addObject(blur, recordUndo: false)
 
-        var highlight = CanvasObject(
+        let highlight = CanvasObject(
             type: .highlight,
-            frame: CGRect(x: 300, y: 300, width: 420, height: 44),
+            frame: layout.taxRow,
             style: ObjectStyle(
                 strokeColor: .systemYellow,
-                fillColor: NSColor.systemYellow.withAlphaComponent(0.35),
+                fillColor: NSColor.systemYellow.withAlphaComponent(0.38),
                 strokeWidth: 1
             )
         )
         doc.addObject(highlight, recordUndo: false)
 
-        var callout = CanvasObject(
+        var arrow = CanvasObject(
+            type: .arrow,
+            frame: CGRect(
+                x: min(layout.arrowEnd.x, layout.arrowStart.x) - 8,
+                y: min(layout.arrowEnd.y, layout.arrowStart.y) - 8,
+                width: abs(layout.arrowStart.x - layout.arrowEnd.x) + 16,
+                height: abs(layout.arrowStart.y - layout.arrowEnd.y) + 16
+            ),
+            style: ObjectStyle(strokeColor: .systemRed, fillColor: .clear, strokeWidth: 4)
+        )
+        arrow.points = [layout.arrowStart, layout.arrowEnd]
+        doc.addObject(arrow, recordUndo: false)
+
+        let callout = CanvasObject(
             type: .rectangle,
-            frame: CGRect(x: 980, y: 340, width: 320, height: 92),
+            frame: layout.callout,
             style: ObjectStyle(
                 strokeColor: .systemRed,
                 fillColor: NSColor.systemRed.withAlphaComponent(0.12),
@@ -53,20 +104,14 @@ enum DocsScreenshotRunner {
 
         var text = CanvasObject(
             type: .textBox,
-            frame: CGRect(x: 996, y: 356, width: 288, height: 64),
+            frame: layout.callout.insetBy(dx: 14, dy: 16),
             style: ObjectStyle(strokeColor: .clear, fillColor: .clear, fontSize: 22, textColor: .systemRed)
         )
         text.text = "Wrong total — should be $48"
         doc.addObject(text, recordUndo: false)
 
-        var blur = CanvasObject(
-            type: .blur,
-            frame: CGRect(x: 300, y: 470, width: 360, height: 36),
-            style: ObjectStyle()
-        )
-        blur.filterKind = .blur
-        blur.filterAmount = 14
-        doc.addObject(blur, recordUndo: false)
+        // Select the callout so handles frame a real annotation, not a thin blur strip.
+        doc.selection = [callout.id]
 
         services.editorWindows.open(document: doc)
         await settle(0.9)
@@ -76,7 +121,7 @@ enum DocsScreenshotRunner {
             .first
         if let editorWin, let img = captureWindow(editorWin) {
             writePNG(img, to: outDir.appendingPathComponent("editor-hero.png"))
-            print("Wrote editor.png")
+            print("Wrote editor-hero.png")
         } else {
             print("WARN: editor window not captured")
         }
@@ -232,6 +277,18 @@ enum DocsScreenshotRunner {
     // MARK: - Demo canvases
 
     private static func makeBugReportDemoImage(width: Int, height: Int) -> CGImage {
+        makeBugReportDemoImage(layout: .make(width: width, height: height))
+    }
+
+    private static func makeBugReportDemoImage(layout: CheckoutLayout) -> CGImage {
+        let width = Int(layout.size.width)
+        let height = Int(layout.size.height)
+        let H = CGFloat(height)
+        /// Convert top-left layout rect → CoreGraphics bottom-left for drawing into an upright CGImage.
+        func bl(_ r: CGRect) -> CGRect {
+            CGRect(x: r.origin.x, y: H - r.maxY, width: r.width, height: r.height)
+        }
+
         let cs = CGColorSpaceCreateDeviceRGB()
         let ctx = CGContext(
             data: nil, width: width, height: height,
@@ -240,9 +297,8 @@ enum DocsScreenshotRunner {
         )!
         drawWallpaper(ctx, width: width, height: height)
 
-        let card = CGRect(x: CGFloat(width) * 0.12, y: CGFloat(height) * 0.1,
-                          width: CGFloat(width) * 0.76, height: CGFloat(height) * 0.78)
-        drawWindowChrome(ctx, card: card, title: "Acme Store — Checkout")
+        let cardBL = bl(layout.card)
+        drawWindowChrome(ctx, card: cardBL, title: "Acme Store — Checkout")
 
         NSGraphicsContext.saveGraphicsState()
         NSGraphicsContext.current = NSGraphicsContext(cgContext: ctx, flipped: false)
@@ -253,41 +309,44 @@ enum DocsScreenshotRunner {
         let labelColor = NSColor.labelColor
         let secondary = NSColor.secondaryLabelColor
 
+        let titleBL = bl(CGRect(x: layout.card.minX + 36, y: layout.card.minY + 56, width: 400, height: 34))
         ("Order summary" as NSString).draw(
-            at: CGPoint(x: card.minX + 36, y: card.maxY - 100),
+            at: CGPoint(x: titleBL.minX, y: titleBL.minY),
             withAttributes: [.font: titleFont, .foregroundColor: labelColor]
         )
 
-        let rows: [(String, String)] = [
-            ("Plan", "Pro — annual"),
-            ("Seats", "3× $16 / month"),
-            ("Tax", "$4.80"),
-            ("Total due today", "$52.80"),
+        let rows: [(String, String, CGRect)] = [
+            ("Plan", "Pro — annual", CGRect(x: layout.card.minX + 28, y: layout.card.minY + 108, width: 520, height: 36)),
+            ("Seats", "3× $16 / month", CGRect(x: layout.card.minX + 28, y: layout.card.minY + 148, width: 520, height: 36)),
+            ("Tax", "$4.80", layout.taxRow),
+            ("Total due today", "$52.80", layout.totalRow),
         ]
-        var y = card.maxY - 150
-        for (label, value) in rows {
+        for (label, value, rowTL) in rows {
+            let row = bl(rowTL)
             (label as NSString).draw(
-                at: CGPoint(x: card.minX + 36, y: y),
+                at: CGPoint(x: row.minX + 8, y: row.minY + 8),
                 withAttributes: [.font: bodyFont, .foregroundColor: secondary]
             )
             (value as NSString).draw(
-                at: CGPoint(x: card.minX + 280, y: y),
+                at: CGPoint(x: row.minX + 252, y: row.minY + 8),
                 withAttributes: [.font: bodyFont, .foregroundColor: labelColor]
             )
-            y -= 40
         }
 
+        let emailLabelTL = CGRect(x: layout.emailValue.minX, y: layout.emailValue.minY - 28, width: 200, height: 22)
+        let emailLabel = bl(emailLabelTL)
         ("Customer email" as NSString).draw(
-            at: CGPoint(x: card.minX + 36, y: y - 20),
+            at: CGPoint(x: emailLabel.minX + 8, y: emailLabel.minY),
             withAttributes: [.font: bodyFont, .foregroundColor: secondary]
         )
+        let email = bl(layout.emailValue)
         ("alex.morgan@example.com" as NSString).draw(
-            at: CGPoint(x: card.minX + 36, y: y - 48),
+            at: CGPoint(x: email.minX + 8, y: email.minY + 4),
             withAttributes: [.font: mono, .foregroundColor: labelColor]
         )
 
-        // Primary button
-        let btn = CGRect(x: card.minX + 36, y: card.minY + 48, width: 180, height: 40)
+        let btnTL = CGRect(x: layout.card.minX + 36, y: layout.card.maxY - 88, width: 180, height: 40)
+        let btn = bl(btnTL)
         ctx.setFillColor(NSColor.systemBlue.cgColor)
         ctx.beginPath()
         ctx.addPath(CGPath(roundedRect: btn, cornerWidth: 8, cornerHeight: 8, transform: nil))
@@ -297,8 +356,8 @@ enum DocsScreenshotRunner {
             withAttributes: [.font: NSFont.systemFont(ofSize: 15, weight: .semibold), .foregroundColor: NSColor.white]
         )
 
-        // Side note card
-        let note = CGRect(x: card.maxX - 340, y: card.minY + 120, width: 280, height: 160)
+        let noteTL = CGRect(x: layout.card.maxX - 340, y: layout.card.maxY - 220, width: 280, height: 160)
+        let note = bl(noteTL)
         ctx.setFillColor(NSColor.controlBackgroundColor.cgColor)
         ctx.beginPath()
         ctx.addPath(CGPath(roundedRect: note, cornerWidth: 10, cornerHeight: 10, transform: nil))

@@ -660,7 +660,7 @@ struct EditorPropertiesView: View {
                     }
                 }
                 HStack {
-                    TextField("Nazwa stylu", text: $newStyleName)
+                    TextField(String(localized: "Style name"), text: $newStyleName)
                     Button("Save style") {
                         presetStore.saveStyle(from: document, name: newStyleName)
                         newStyleName = ""
@@ -671,7 +671,7 @@ struct EditorPropertiesView: View {
                 Divider()
                 Text("Object presets").font(.subheadline.weight(.semibold))
                 HStack {
-                    TextField("Nazwa", text: $newObjectPresetName)
+                    TextField(String(localized: "Name"), text: $newObjectPresetName)
                     Button("Save") {
                         presetStore.saveSelected(from: document, name: newObjectPresetName)
                         newObjectPresetName = ""

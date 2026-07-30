@@ -70,6 +70,7 @@
 "Display selection" = "Zaznaczanie ekranów";
 "Display → clipboard" = "Ekran → schowek";
 "Dock icon" = "Ikona w Docku";
+"Dock icon is unavailable while ScreenForge runs as a menu-bar app." = "Ikona w Docku jest niedostępna, gdy ScreenForge działa jako aplikacja menu bar.";
 "Document recovery" = "Odzyskiwanie dokumentów";
 "Don’t save" = "Nie zapisuj";
 "Editor" = "Edytor";

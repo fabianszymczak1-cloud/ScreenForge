@@ -70,6 +70,7 @@
 "Display selection" = "Display selection";
 "Display → clipboard" = "Display → clipboard";
 "Dock icon" = "Dock icon";
+"Dock icon is unavailable while ScreenForge runs as a menu-bar app." = "Dock icon is unavailable while ScreenForge runs as a menu-bar app.";
 "Document recovery" = "Document recovery";
 "Don’t save" = "Don’t save";
 "Editor" = "Editor";
