@@ -104,11 +104,17 @@ EOF
 )"
 
 echo "==> Creating GitHub release $TAG"
+# Versioned DMG for Safari (no overwrite) + stable ScreenForge.dmg for README latest/download link.
+STABLE_DMG="$ROOT/build/dmg/ScreenForge.dmg"
+if [[ ! -f "$STABLE_DMG" ]]; then
+  cp -f "$DMG" "$STABLE_DMG"
+fi
 gh release create "$TAG" \
   --repo "$REPO" \
   --title "ScreenForge $VERSION" \
   --notes "$NOTES" \
   "$DMG" \
+  "$STABLE_DMG" \
   "$APPCAST"
 
 echo "==> Done: https://github.com/${REPO}/releases/tag/${TAG}"
