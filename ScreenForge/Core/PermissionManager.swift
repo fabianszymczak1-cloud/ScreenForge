@@ -1,6 +1,7 @@
 import Foundation
 import AppKit
 import SwiftUI
+import ScreenCaptureKit
 
 @MainActor
 final class PermissionManager: NSObject, ObservableObject, NSWindowDelegate {
@@ -8,6 +9,8 @@ final class PermissionManager: NSObject, ObservableObject, NSWindowDelegate {
     static let onboardingResumeStepKey = "sf.onboardingResumeStep"
 
     @Published private(set) var hasScreenRecording = false
+    /// Preflight/settings look granted, but ScreenCaptureKit still needs a fresh process.
+    @Published private(set) var screenRecordingNeedsRelaunch = false
     @Published private(set) var hasAccessibility = false
     @Published private(set) var isRefreshing = false
     private var onboardingWindow: NSWindow?
@@ -38,14 +41,15 @@ final class PermissionManager: NSObject, ObservableObject, NSWindowDelegate {
     }
 
     @discardableResult
-    func refreshAsync() async -> Bool {
+    func refreshAsync(probeCapture: Bool = false) async -> Bool {
         isRefreshing = true
         defer { isRefreshing = false }
         hasAccessibility = AXIsProcessTrusted()
 
-        // Only use CGPreflight for automatic checks.
-        // SCShareableContent.excludingDesktopWindows prompts for TCC and can
-        // disrupt menu-bar hosting on macOS Tahoe — never call it on launch.
+        // CGPreflight alone is unreliable on Tahoe (especially with ad-hoc signing /
+        // rebuilt cdhashes): System Settings can show ON while preflight stays false.
+        // Keep preflight-only for silent launch checks; user-facing "Check again" probes
+        // ScreenCaptureKit for the real capability.
         var granted = CGPreflightScreenCaptureAccess()
         if !granted {
             for _ in 0..<3 {
@@ -56,14 +60,45 @@ final class PermissionManager: NSObject, ObservableObject, NSWindowDelegate {
                 }
             }
         }
+
+        var needsRelaunch = false
+        if probeCapture {
+            let probe = await Self.probeScreenCaptureAccess()
+            if probe {
+                granted = true
+                needsRelaunch = false
+            } else if granted {
+                // Preflight flipped on in this process — SCK often needs a relaunch.
+                needsRelaunch = true
+                granted = false
+            } else {
+                needsRelaunch = false
+            }
+            DiagnosticLog.shared.info(
+                "screen.permission preflight=\(CGPreflightScreenCaptureAccess()) probe=\(probe) granted=\(granted) needsRelaunch=\(needsRelaunch)"
+            )
+        }
+
+        screenRecordingNeedsRelaunch = needsRelaunch
         hasScreenRecording = granted
         return granted
+    }
+
+    /// Actual capture capability — may prompt if never asked. Avoid on cold launch.
+    private static func probeScreenCaptureAccess() async -> Bool {
+        do {
+            let content = try await SCShareableContent.excludingDesktopWindows(false, onScreenWindowsOnly: true)
+            return !content.displays.isEmpty
+        } catch {
+            DiagnosticLog.shared.warn("screen.permission.probe.failed \(error.localizedDescription)")
+            return false
+        }
     }
 
     func requestScreenRecording() {
         markRestoreOnboardingAfterTCC()
         _ = CGRequestScreenCaptureAccess()
-        Task { await refreshAsync() }
+        Task { await refreshAsync(probeCapture: true) }
     }
 
     func openScreenRecordingSettings() {
@@ -160,7 +195,7 @@ final class PermissionManager: NSObject, ObservableObject, NSWindowDelegate {
         let window = NSWindow(contentViewController: hosting)
         window.title = "ScreenForge"
         window.styleMask = [.titled, .closable]
-        window.setContentSize(NSSize(width: 520, height: 480))
+        window.setContentSize(NSSize(width: 520, height: 540))
         window.center()
         window.isReleasedWhenClosed = false
         window.delegate = self
@@ -203,7 +238,7 @@ final class PermissionManager: NSObject, ObservableObject, NSWindowDelegate {
         let window = NSWindow(contentViewController: hosting)
         window.title = "ScreenForge"
         window.styleMask = [.titled, .closable]
-        window.setContentSize(NSSize(width: 520, height: 360))
+        window.setContentSize(NSSize(width: 520, height: 420))
         window.center()
         window.isReleasedWhenClosed = false
         window.delegate = self

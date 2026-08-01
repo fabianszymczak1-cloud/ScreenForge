@@ -42,7 +42,7 @@ struct OnboardingView: View {
                             permissions.openScreenRecordingSettings()
                         }
                         Button(String(localized: "Check again")) {
-                            Task { await permissions.refreshAsync() }
+                            Task { await permissions.refreshAsync(probeCapture: true) }
                         }
                         .disabled(permissions.isRefreshing)
                         Button(String(localized: "Request permission")) {
@@ -52,8 +52,8 @@ struct OnboardingView: View {
                         Text(String(localized: "After granting in System Settings, use Check again. macOS may quit the app — reopen ScreenForge and this screen returns automatically."))
                             .font(.callout)
                             .foregroundStyle(.secondary)
-                        if permissions.hasScreenRecording {
-                            Text(String(localized: "Permission is on. Continue, or relaunch if capture still fails."))
+                        if permissions.screenRecordingNeedsRelaunch || (!permissions.hasScreenRecording && !permissions.isRefreshing) {
+                            Text(String(localized: "If the Settings toggle is already ON but ScreenForge still says missing: remove ScreenForge from the list with −, quit the app, open only /Applications/ScreenForge.app, tap Request permission, then Relaunch."))
                                 .font(.callout)
                                 .foregroundStyle(.secondary)
                             Button(String(localized: "Relaunch ScreenForge")) {
@@ -61,6 +61,11 @@ struct OnboardingView: View {
                                 permissions.markRestoreOnboardingAfterTCC(resumeStep: step)
                                 permissions.restartApp()
                             }
+                        }
+                        if permissions.hasScreenRecording {
+                            Text(String(localized: "Permission is on. Continue, or relaunch if capture still fails."))
+                                .font(.callout)
+                                .foregroundStyle(.secondary)
                         }
                     }
                 case 2:
@@ -150,9 +155,9 @@ struct OnboardingView: View {
             }
         }
         .padding(28)
-        .frame(width: 520, height: 480)
+        .frame(width: 520, height: 540)
         .task {
-            await permissions.refreshAsync()
+            await permissions.refreshAsync(probeCapture: true)
             launchAtLogin.refresh()
         }
     }

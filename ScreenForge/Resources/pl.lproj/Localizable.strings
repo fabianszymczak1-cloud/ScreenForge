@@ -264,3 +264,4 @@
 "Open Login Items settings" = "Otwórz ustawienia elementów logowania";
 "Open export folder" = "Otwórz folder eksportu";
 "Open the folder with exported PNG files in Finder" = "Otwórz w Finderze folder z wyeksportowanymi plikami PNG";
+"If the Settings toggle is already ON but ScreenForge still says missing: remove ScreenForge from the list with −, quit the app, open only /Applications/ScreenForge.app, tap Request permission, then Relaunch." = "Jeśli przełącznik w Ustawieniach jest już WŁĄCZONY, a ScreenForge nadal mówi „brak”: usuń ScreenForge z listy przyciskiem −, zamknij aplikację, uruchom tylko /Applications/ScreenForge.app, kliknij Poproś o uprawnienie, potem Uruchom ponownie.";

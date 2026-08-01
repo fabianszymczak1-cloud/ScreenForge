@@ -229,3 +229,4 @@
 "Open Login Items settings" = "Open Login Items settings";
 "Open export folder" = "Open export folder";
 "Open the folder with exported PNG files in Finder" = "Open the folder with exported PNG files in Finder";
+"If the Settings toggle is already ON but ScreenForge still says missing: remove ScreenForge from the list with −, quit the app, open only /Applications/ScreenForge.app, tap Request permission, then Relaunch." = "If the Settings toggle is already ON but ScreenForge still says missing: remove ScreenForge from the list with −, quit the app, open only /Applications/ScreenForge.app, tap Request permission, then Relaunch.";
