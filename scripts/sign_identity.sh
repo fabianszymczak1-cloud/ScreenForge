@@ -9,9 +9,7 @@ _SCREENFORGE_SIGNING_KC="${SCREENFORGE_SIGNING_KEYCHAIN:-/tmp/screenforge-signin
 _SCREENFORGE_SIGNING_KC_PASS="${SCREENFORGE_SIGNING_KEYCHAIN_PASSWORD:-screenforge-local}"
 
 ensure_screenforge_signing_identity() {
-  # Already usable in the default search list?
   if security find-identity -v -p codesigning 2>/dev/null | grep -Fq 'ScreenForge Release'; then
-    # Prefer an unlocked dedicated keychain when present (avoids errSecInternalComponent).
     if [[ -f "$_SCREENFORGE_SIGNING_KC" ]]; then
       security unlock-keychain -p "$_SCREENFORGE_SIGNING_KC_PASS" "$_SCREENFORGE_SIGNING_KC" 2>/dev/null || true
     fi
@@ -41,7 +39,6 @@ ensure_screenforge_signing_identity() {
   security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$_SCREENFORGE_SIGNING_KC_PASS" \
     "$_SCREENFORGE_SIGNING_KC" >/dev/null
 
-  # Put signing keychain first; keep login keychain available.
   local login="$HOME/Library/Keychains/login.keychain-db"
   if [[ -f "$login" ]]; then
     security list-keychains -d user -s "$_SCREENFORGE_SIGNING_KC" "$login"
@@ -65,6 +62,24 @@ resolve_screenforge_sign_identity() {
   printf '%s\n' "-"
 }
 
+# Sign nested Mach-O / bundles inside-out so Sparkle matches the main binary identity.
+# Hardened runtime rejects Sparkle when Team IDs differ (self-signed main vs leftover nested sig).
+_sign_nested() {
+  local root="$1"
+  local identity="$2"
+  local path
+  # Deepest first: XPC → appex → frameworks → helper apps
+  while IFS= read -r path; do
+    [[ -e "$path" ]] || continue
+    echo "  nest-sign: $path"
+    codesign --force --sign "$identity" --options runtime --timestamp=none "$path"
+  done < <(
+    find "$root" \( -name '*.xpc' -o -name '*.appex' -o -name '*.framework' -o -name '*.app' \) \
+      ! -path "$root" \
+      -print 2>/dev/null | awk '{ print length, $0 }' | sort -nr | cut -d' ' -f2-
+  )
+}
+
 sign_screenforge_app() {
   local target="$1"
   local entitlements="${2:-}"
@@ -82,6 +97,9 @@ sign_screenforge_app() {
     echo "==> Codesign identity: $identity"
   fi
 
+  echo "==> Nest-sign frameworks/helpers"
+  _sign_nested "$target" "$identity"
+
   local -a args=(--force --deep --sign "$identity" --options runtime --timestamp=none)
   if [[ -n "$entitlements" && -f "$entitlements" ]]; then
     args+=(--entitlements "$entitlements")
@@ -90,4 +108,10 @@ sign_screenforge_app() {
   codesign --verify --deep --strict --verbose=2 "$target"
   echo "==> Designated requirement:"
   codesign -d -r- "$target" 2>&1 | sed -n 's/^.*designated => /designated => /p'
+  # Entitlements must include disable-library-validation when embedding Sparkle under a custom identity.
+  if codesign -d --entitlements - "$target" 2>/dev/null | grep -Fq 'disable-library-validation'; then
+    echo "==> library-validation: disabled (Sparkle OK)"
+  else
+    echo "WARNING: com.apple.security.cs.disable-library-validation missing — Sparkle may fail to load"
+  fi
 }
