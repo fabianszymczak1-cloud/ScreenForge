@@ -23,6 +23,16 @@ struct PermissionsGateView: View {
                 }
             }
 
+            if !permissions.isCanonicalInstall {
+                Text(String(localized: "This copy is not /Applications/ScreenForge.app. Quit, eject any ScreenForge DMG, and open only the app in Applications — otherwise Screen Recording will not stick."))
+                    .font(.callout)
+                    .foregroundStyle(.orange)
+            }
+
+            Button(String(localized: "Request permission")) {
+                permissions.requestScreenRecording()
+            }
+            .disabled(permissions.isRefreshing)
             Button(String(localized: "Open Screen Recording settings")) {
                 permissions.openScreenRecordingSettings()
             }
@@ -30,23 +40,32 @@ struct PermissionsGateView: View {
                 Task { await permissions.refreshAsync(probeCapture: true) }
             }
             .disabled(permissions.isRefreshing)
-            Button(String(localized: "Request permission")) {
-                permissions.requestScreenRecording()
-            }
-            .disabled(permissions.isRefreshing)
 
             Text(String(localized: "After granting in System Settings, use Check again. macOS may quit the app — reopen ScreenForge and this screen returns automatically."))
                 .font(.callout)
                 .foregroundStyle(.secondary)
-            if permissions.screenRecordingNeedsRelaunch || (!permissions.hasScreenRecording && !permissions.isRefreshing) {
-                Text(String(localized: "If the Settings toggle is already ON but ScreenForge still says missing: remove ScreenForge from the list with −, quit the app, open only /Applications/ScreenForge.app, tap Request permission, then Relaunch."))
+
+            if permissions.screenRecordingNeedsRelaunch {
+                Text(String(localized: "Permission registered in this process, but capture needs a relaunch."))
                     .font(.callout)
                     .foregroundStyle(.secondary)
                 Button(String(localized: "Relaunch ScreenForge")) {
                     permissions.markRestoreOnboardingAfterTCC()
                     permissions.restartApp()
                 }
+            } else if !permissions.hasScreenRecording && !permissions.isRefreshing {
+                Text(String(localized: "If Settings already lists ScreenForge but this screen still says missing, that row is for an old install. Clear stale grants, then Request permission from /Applications/ScreenForge.app only."))
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                Button(String(localized: "Clear stale Screen Recording grants")) {
+                    permissions.resetStaleScreenRecordingGrants()
+                }
+                Button(String(localized: "Relaunch ScreenForge")) {
+                    permissions.markRestoreOnboardingAfterTCC()
+                    permissions.restartApp()
+                }
             }
+
             if permissions.hasScreenRecording {
                 Text(String(localized: "Permission is on. Continue, or relaunch if capture still fails."))
                     .font(.callout)
@@ -64,7 +83,7 @@ struct PermissionsGateView: View {
             }
         }
         .padding(28)
-        .frame(width: 520, height: 420)
+        .frame(width: 520, height: 460)
         .task {
             await permissions.refreshAsync(probeCapture: true)
         }

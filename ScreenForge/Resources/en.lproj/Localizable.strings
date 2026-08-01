@@ -230,3 +230,7 @@
 "Open export folder" = "Open export folder";
 "Open the folder with exported PNG files in Finder" = "Open the folder with exported PNG files in Finder";
 "If the Settings toggle is already ON but ScreenForge still says missing: remove ScreenForge from the list with −, quit the app, open only /Applications/ScreenForge.app, tap Request permission, then Relaunch." = "If the Settings toggle is already ON but ScreenForge still says missing: remove ScreenForge from the list with −, quit the app, open only /Applications/ScreenForge.app, tap Request permission, then Relaunch.";
+"If Settings already lists ScreenForge but this screen still says missing, that row is for an old install. Clear stale grants, then Request permission from /Applications/ScreenForge.app only." = "If Settings already lists ScreenForge but this screen still says missing, that row is for an old install. Clear stale grants, then Request permission from /Applications/ScreenForge.app only.";
+"Clear stale Screen Recording grants" = "Clear stale Screen Recording grants";
+"This copy is not /Applications/ScreenForge.app. Quit, eject any ScreenForge DMG, and open only the app in Applications — otherwise Screen Recording will not stick." = "This copy is not /Applications/ScreenForge.app. Quit, eject any ScreenForge DMG, and open only the app in Applications — otherwise Screen Recording will not stick.";
+"Permission registered in this process, but capture needs a relaunch." = "Permission registered in this process, but capture needs a relaunch.";

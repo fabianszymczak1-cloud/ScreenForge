@@ -7,12 +7,21 @@ import ScreenCaptureKit
 final class PermissionManager: NSObject, ObservableObject, NSWindowDelegate {
     static let restoreOnboardingAfterTCCKey = "sf.restoreOnboardingAfterTCC"
     static let onboardingResumeStepKey = "sf.onboardingResumeStep"
+    static let canonicalInstallPath = "/Applications/ScreenForge.app"
+
+    /// Bundle IDs used by older ScreenForge builds — stale TCC rows can linger under these.
+    static let legacyScreenCaptureBundleIDs = [
+        "app.screenforge.macos",
+        "com.local.ScreenForge"
+    ]
 
     @Published private(set) var hasScreenRecording = false
-    /// Preflight/settings look granted, but ScreenCaptureKit still needs a fresh process.
+    /// Preflight true in this process, but ScreenCaptureKit still needs a fresh process.
     @Published private(set) var screenRecordingNeedsRelaunch = false
     @Published private(set) var hasAccessibility = false
     @Published private(set) var isRefreshing = false
+    /// False when running from a DMG, DerivedData, or any path other than /Applications.
+    @Published private(set) var isCanonicalInstall = true
     private var onboardingWindow: NSWindow?
     private var permissionsWindow: NSWindow?
 
@@ -45,11 +54,11 @@ final class PermissionManager: NSObject, ObservableObject, NSWindowDelegate {
         isRefreshing = true
         defer { isRefreshing = false }
         hasAccessibility = AXIsProcessTrusted()
+        isCanonicalInstall = (Bundle.main.bundlePath as NSString).standardizingPath == Self.canonicalInstallPath
 
-        // CGPreflight alone is unreliable on Tahoe (especially with ad-hoc signing /
-        // rebuilt cdhashes): System Settings can show ON while preflight stays false.
-        // Keep preflight-only for silent launch checks; user-facing "Check again" probes
-        // ScreenCaptureKit for the real capability.
+        // CGPreflight is the process-truth for this binary's code identity.
+        // System Settings can still show an ON row for a *previous* CDHash / path under the
+        // same display name — that is not a preflight false-negative.
         var granted = CGPreflightScreenCaptureAccess()
         if !granted {
             for _ in 0..<3 {
@@ -62,20 +71,20 @@ final class PermissionManager: NSObject, ObservableObject, NSWindowDelegate {
         }
 
         var needsRelaunch = false
-        if probeCapture {
+        if probeCapture && granted {
+            // Only touch ScreenCaptureKit when preflight already passed. Probing while
+            // denied re-triggers the system TCC sheet and does not fix a stale Settings row.
             let probe = await Self.probeScreenCaptureAccess()
-            if probe {
-                granted = true
-                needsRelaunch = false
-            } else if granted {
-                // Preflight flipped on in this process — SCK often needs a relaunch.
+            if !probe {
                 needsRelaunch = true
                 granted = false
-            } else {
-                needsRelaunch = false
             }
             DiagnosticLog.shared.info(
-                "screen.permission preflight=\(CGPreflightScreenCaptureAccess()) probe=\(probe) granted=\(granted) needsRelaunch=\(needsRelaunch)"
+                "screen.permission preflight=true probe=\(probe) granted=\(granted) needsRelaunch=\(needsRelaunch) path=\(Bundle.main.bundlePath)"
+            )
+        } else {
+            DiagnosticLog.shared.info(
+                "screen.permission preflight=\(granted) probeSkipped=\(probeCapture && !granted) path=\(Bundle.main.bundlePath) canonical=\(isCanonicalInstall)"
             )
         }
 
@@ -84,7 +93,7 @@ final class PermissionManager: NSObject, ObservableObject, NSWindowDelegate {
         return granted
     }
 
-    /// Actual capture capability — may prompt if never asked. Avoid on cold launch.
+    /// Actual capture capability — may prompt if never asked. Avoid unless preflight is true.
     private static func probeScreenCaptureAccess() async -> Bool {
         do {
             let content = try await SCShareableContent.excludingDesktopWindows(false, onScreenWindowsOnly: true)
@@ -98,7 +107,36 @@ final class PermissionManager: NSObject, ObservableObject, NSWindowDelegate {
     func requestScreenRecording() {
         markRestoreOnboardingAfterTCC()
         _ = CGRequestScreenCaptureAccess()
-        Task { await refreshAsync(probeCapture: true) }
+        // Do not call SCShareableContent here — it races the system sheet / TCC quit.
+        Task {
+            try? await Task.sleep(nanoseconds: 400_000_000)
+            await refreshAsync(probeCapture: false)
+        }
+    }
+
+    /// Clears Screen Recording TCC for current + legacy bundle IDs, then opens Settings.
+    /// Use when Settings shows ScreenForge ON but preflight stays false (stale identity).
+    func resetStaleScreenRecordingGrants() {
+        markRestoreOnboardingAfterTCC()
+        var ids = Self.legacyScreenCaptureBundleIDs
+        if let current = Bundle.main.bundleIdentifier {
+            ids.insert(current, at: 0)
+        }
+        for id in ids {
+            let proc = Process()
+            proc.executableURL = URL(fileURLWithPath: "/usr/bin/tccutil")
+            proc.arguments = ["reset", "ScreenCapture", id]
+            do {
+                try proc.run()
+                proc.waitUntilExit()
+                DiagnosticLog.shared.info("screen.permission.tccutil.reset id=\(id) status=\(proc.terminationStatus)")
+            } catch {
+                DiagnosticLog.shared.warn("screen.permission.tccutil.failed id=\(id) \(error.localizedDescription)")
+            }
+        }
+        hasScreenRecording = false
+        screenRecordingNeedsRelaunch = false
+        openScreenRecordingSettings()
     }
 
     func openScreenRecordingSettings() {
@@ -195,7 +233,7 @@ final class PermissionManager: NSObject, ObservableObject, NSWindowDelegate {
         let window = NSWindow(contentViewController: hosting)
         window.title = "ScreenForge"
         window.styleMask = [.titled, .closable]
-        window.setContentSize(NSSize(width: 520, height: 540))
+        window.setContentSize(NSSize(width: 520, height: 560))
         window.center()
         window.isReleasedWhenClosed = false
         window.delegate = self
@@ -238,7 +276,7 @@ final class PermissionManager: NSObject, ObservableObject, NSWindowDelegate {
         let window = NSWindow(contentViewController: hosting)
         window.title = "ScreenForge"
         window.styleMask = [.titled, .closable]
-        window.setContentSize(NSSize(width: 520, height: 420))
+        window.setContentSize(NSSize(width: 520, height: 460))
         window.center()
         window.isReleasedWhenClosed = false
         window.delegate = self

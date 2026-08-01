@@ -21,7 +21,7 @@ done
 PRIVATE_KEY="${SPARKLE_PRIVATE_KEY_FILE:-$ROOT/Secrets/sparkle_eddsa_private.key}"
 BMC="https://buymeacoffee.com/5r8nffw85nw"
 REPO="fabianszymczak1-cloud/ScreenForge"
-DMG_NAME="ScreenForge.dmg"
+DMG_NAME="ScreenForge-${VERSION}.dmg"
 DOWNLOAD_URL="https://github.com/${REPO}/releases/download/${TAG}/${DMG_NAME}"
 
 if [[ ! -f "$PRIVATE_KEY" ]]; then
@@ -35,14 +35,10 @@ if [[ -z "$SIGN_UPDATE" ]]; then
 fi
 
 "$ROOT/scripts/make_dmg.sh" "$VERSION"
-DMG="$ROOT/build/dmg/ScreenForge.dmg"
-
-# Optional smoke (bounded — UI alerts must not hang release)
-if [[ -x "$ROOT/build/DerivedData/Build/Products/Release/ScreenForge.app/Contents/MacOS/ScreenForge" ]]; then
-  echo "==> Smoke test"
-  perl -e 'alarm 45; exec @ARGV' \
-    "$ROOT/build/DerivedData/Build/Products/Release/ScreenForge.app/Contents/MacOS/ScreenForge" \
-    --smoke-test || true
+DMG="$ROOT/build/dmg/$DMG_NAME"
+if [[ ! -f "$DMG" ]]; then
+  echo "Expected DMG missing: $DMG"
+  exit 1
 fi
 
 echo "==> Signing update with Sparkle"
@@ -98,8 +94,10 @@ If ScreenForge helps you: [Buy Me a Coffee](${BMC})
 
 ### Notes
 - macOS 26+
-- Grant **Screen Recording** on first launch
-- First launch may require **Privacy & Security → Open Anyway** (ad-hoc signed build)
+- Grant **Screen Recording** on first launch (open only \`/Applications/ScreenForge.app\`)
+- Builds are signed with a **stable local “ScreenForge Release” identity** (not Apple Developer ID). Screen Recording should survive future updates signed with the same identity.
+- Upgrading from 1.0.14 or older (ad-hoc): use **Clear stale Screen Recording grants** once, then Request permission again.
+- First launch may require **Privacy & Security → Open Anyway**
 - Or: \`xattr -dr com.apple.quarantine /Applications/ScreenForge.app\`
 - See README → *macOS security warning* for details
 EOF

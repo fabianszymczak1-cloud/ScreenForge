@@ -4,23 +4,15 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
+# shellcheck source=sign_identity.sh
+source "$ROOT/scripts/sign_identity.sh"
+
 CONFIG="${1:-Release}"
 VERSION="${SCREENFORGE_VERSION:-1.0.0}"
 BUILD_NUMBER="${SCREENFORGE_BUILD:-1}"
 DERIVED="$ROOT/build/DerivedData"
 APP="$DERIVED/Build/Products/$CONFIG/ScreenForge.app"
 ENTITLEMENTS="$ROOT/ScreenForge/Resources/ScreenForge.entitlements"
-
-sign_app() {
-  local target="$1"
-  if [[ -f "$ENTITLEMENTS" ]]; then
-    codesign --force --deep --sign - --entitlements "$ENTITLEMENTS" "$target" \
-      || codesign --force --deep --sign - "$target"
-  else
-    codesign --force --deep --sign - "$target"
-  fi
-  codesign --verify --deep --strict --verbose=2 "$target"
-}
 
 echo "==> xcodegen"
 xcodegen generate
@@ -39,8 +31,8 @@ if [[ ! -d "$APP" ]]; then
   exit 1
 fi
 
-echo "==> Ad-hoc deep sign + verify"
-sign_app "$APP"
+echo "==> Deep sign + verify"
+sign_screenforge_app "$APP" "$ENTITLEMENTS"
 
 echo "==> Built: $APP"
 echo "$APP"

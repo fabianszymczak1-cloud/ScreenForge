@@ -84,6 +84,7 @@ Then open ScreenForge again from Applications.
 - Menu bar icon should appear (camera viewfinder).
 - Complete onboarding and grant **Screen Recording**.
 - Future updates via **Sparkle** (Check for Updates) usually do not need this step again.
+- Releases are signed with a stable local **ScreenForge Release** identity (not Apple Developer ID) so Screen Recording grants survive updates. After upgrading from an older ad-hoc build, use **Clear stale Screen Recording grants** once in onboarding.
 
 If something still fails, make sure the app is in `/Applications` and not sitting on the Desktop or inside the mounted DMG.
 

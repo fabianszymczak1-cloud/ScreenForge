@@ -4,22 +4,15 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
+# shellcheck source=sign_identity.sh
+source "$ROOT/scripts/sign_identity.sh"
+
 CONFIG="${1:-Release}"
 DERIVED="$ROOT/build/DerivedData"
 APP="$DERIVED/Build/Products/$CONFIG/ScreenForge.app"
 DEST="/Applications/ScreenForge.app"
 ENTITLEMENTS="$ROOT/ScreenForge/Resources/ScreenForge.entitlements"
-
-sign_app() {
-  local target="$1"
-  if [[ -f "$ENTITLEMENTS" ]]; then
-    codesign --force --deep --sign - --entitlements "$ENTITLEMENTS" "$target" \
-      || codesign --force --deep --sign - "$target"
-  else
-    codesign --force --deep --sign - "$target"
-  fi
-  codesign --verify --deep --strict --verbose=2 "$target"
-}
+LSREGISTER="/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister"
 
 "$ROOT/scripts/build_app.sh" "$CONFIG"
 
@@ -34,14 +27,14 @@ sleep 0.3
 
 echo "==> Installing to $DEST"
 rm -rf "$DEST"
-# ditto preserves resource forks better than cp -R; still re-sign after copy.
 ditto "$APP" "$DEST"
 
-echo "==> Re-sign installed app (avoids Sparkle Team ID mismatch after copy)"
-sign_app "$DEST"
+echo "==> Re-sign installed app"
+sign_screenforge_app "$DEST" "$ENTITLEMENTS"
 
-echo "==> Launching"
-open "$DEST"
+if [[ -x "$LSREGISTER" ]]; then
+  "$LSREGISTER" -u "$APP" 2>/dev/null || true
+fi
 
-echo "==> Installed: $DEST"
+echo "==> Installed: $DEST (not launched)"
 echo "$DEST"
