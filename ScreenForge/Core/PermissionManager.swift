@@ -170,7 +170,6 @@ final class PermissionManager: NSObject, ObservableObject, NSWindowDelegate {
     }
 
     func openMenuBarSettings() {
-        // Keep a stable status item visible; do not recreate on every Settings open.
         AppServices.shared.settings.showMenuBarIcon = true
         AppDelegate.shared?.applyMenuBarIconPreference()
         NSApp.setActivationPolicy(.accessory)
@@ -225,7 +224,6 @@ final class PermissionManager: NSObject, ObservableObject, NSWindowDelegate {
             existing.orderFrontRegardless()
             NSApp.activate(ignoringOtherApps: true)
             clearRestoreOnboardingAfterTCC()
-            AppDelegate.shared?.applyMenuBarIconPreference()
             return
         }
         closePermissionsWindow()
@@ -236,7 +234,6 @@ final class PermissionManager: NSObject, ObservableObject, NSWindowDelegate {
             AppDelegate.shared?.lifecycleRegisterHotkeysAfterOnboarding()
             self?.onboardingWindow?.close()
             NSApp.setActivationPolicy(.accessory)
-            AppDelegate.shared?.applyMenuBarIconPreference()
         }
         let hosting = NSHostingController(rootView: view)
         let window = NSWindow(contentViewController: hosting)
@@ -256,7 +253,6 @@ final class PermissionManager: NSObject, ObservableObject, NSWindowDelegate {
         NSApp.activate(ignoringOtherApps: true)
         onboardingWindow = window
         clearRestoreOnboardingAfterTCC()
-        AppDelegate.shared?.applyMenuBarIconPreference()
         DiagnosticLog.shared.info("onboarding.presented resumeStep=\(UserDefaults.standard.integer(forKey: Self.onboardingResumeStepKey))")
     }
 
