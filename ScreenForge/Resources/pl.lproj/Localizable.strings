@@ -113,6 +113,7 @@
 "Magnify" = "Powiększenie";
 "Menu bar icon" = "Ikona menu bar";
 "Menu bar icon is hidden" = "Ikona w pasku menu jest ukryta";
+"ScreenForge is allowed in Menu Bar settings but macOS parked the icon off-screen. Click OK, then use “Re-register in Menu Bar list” in onboarding, or toggle ScreenForge OFF→ON in System Settings → Menu Bar." = "ScreenForge jest dozwolone w ustawieniach Paska menu, ale macOS schował ikonę poza ekranem. Kliknij OK, potem „Zarejestruj ponownie…” w welcome albo przełącz ScreenForge WYŁ→WŁ w Ustawieniach → Pasek menu.";
 "macOS may be blocking ScreenForge in System Settings → Menu Bar. Set ScreenForge to Allow, then relaunch the app." = "macOS może blokować ScreenForge w Ustawieniach systemowych → Pasek menu. Ustaw ScreenForge na Zezwalaj, a potem uruchom aplikację ponownie.";
 "Open Menu Bar settings" = "Otwórz ustawienia paska menu";
 "Allow ScreenForge in Menu Bar so the camera icon stays visible." = "Zezwól ScreenForge w Pasku menu, żeby ikona aparatu była widoczna.";

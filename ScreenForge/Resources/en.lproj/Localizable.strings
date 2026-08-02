@@ -113,6 +113,7 @@
 "Magnify" = "Magnify";
 "Menu bar icon" = "Menu bar icon";
 "Menu bar icon is hidden" = "Menu bar icon is hidden";
+"ScreenForge is allowed in Menu Bar settings but macOS parked the icon off-screen. Click OK, then use “Re-register in Menu Bar list” in onboarding, or toggle ScreenForge OFF→ON in System Settings → Menu Bar." = "ScreenForge is allowed in Menu Bar settings but macOS parked the icon off-screen. Click OK, then use “Re-register in Menu Bar list” in onboarding, or toggle ScreenForge OFF→ON in System Settings → Menu Bar.";
 "macOS may be blocking ScreenForge in System Settings → Menu Bar. Set ScreenForge to Allow, then relaunch the app." = "macOS may be blocking ScreenForge in System Settings → Menu Bar. Set ScreenForge to Allow, then relaunch the app.";
 "Open Menu Bar settings" = "Open Menu Bar settings";
 "Allow ScreenForge in Menu Bar so the camera icon stays visible." = "Allow ScreenForge in Menu Bar so the camera icon stays visible.";
