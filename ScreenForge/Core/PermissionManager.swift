@@ -220,14 +220,12 @@ final class PermissionManager: NSObject, ObservableObject, NSWindowDelegate {
     /// Full onboarding wizard (first launch, Settings, or restore after TCC kill).
     func presentOnboarding() {
         if let existing = onboardingWindow {
-            NSApp.setActivationPolicy(.regular)
+            // Stay .accessory (PasteRush) — flipping Regular↔Accessory hides the status item on Tahoe.
             existing.makeKeyAndOrderFront(nil)
             existing.orderFrontRegardless()
             NSApp.activate(ignoringOtherApps: true)
             clearRestoreOnboardingAfterTCC()
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                NSApp.setActivationPolicy(.accessory)
-            }
+            AppDelegate.shared?.applyMenuBarIconPreference()
             return
         }
         closePermissionsWindow()
@@ -238,34 +236,28 @@ final class PermissionManager: NSObject, ObservableObject, NSWindowDelegate {
             AppDelegate.shared?.lifecycleRegisterHotkeysAfterOnboarding()
             self?.onboardingWindow?.close()
             NSApp.setActivationPolicy(.accessory)
+            AppDelegate.shared?.applyMenuBarIconPreference()
         }
         let hosting = NSHostingController(rootView: view)
         let window = NSWindow(contentViewController: hosting)
         window.title = "ScreenForge"
         window.styleMask = [.titled, .closable]
-        window.setContentSize(NSSize(width: 520, height: 560))
+        window.setContentSize(NSSize(width: 520, height: 580))
         window.center()
         window.isReleasedWhenClosed = false
         window.delegate = self
         window.level = .floating
         window.collectionBehavior = [.moveToActiveSpace, .fullScreenAuxiliary]
 
-        // Brief .regular so accessory/agent apps reliably surface the welcome window.
-        NSApp.setActivationPolicy(.regular)
+        NSApp.setActivationPolicy(.accessory)
         window.center()
         window.makeKeyAndOrderFront(nil)
         window.orderFrontRegardless()
         NSApp.activate(ignoringOtherApps: true)
         onboardingWindow = window
         clearRestoreOnboardingAfterTCC()
+        AppDelegate.shared?.applyMenuBarIconPreference()
         DiagnosticLog.shared.info("onboarding.presented resumeStep=\(UserDefaults.standard.integer(forKey: Self.onboardingResumeStepKey))")
-
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
-            // Stay accessory while the window remains open (LSUIElement agent).
-            NSApp.setActivationPolicy(.accessory)
-            window.makeKeyAndOrderFront(nil)
-            NSApp.activate(ignoringOtherApps: true)
-        }
     }
 
     func presentPermissionsGate() {

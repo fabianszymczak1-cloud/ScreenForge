@@ -39,6 +39,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             services.settings.showDockIcon = false
         }
 
+        // Drop poisoned StatusKit autosave keys from older builds (ScreenForgeMain / VisibleCC=0).
+        Self.clearLegacyStatusItemAutosaveDefaults()
+
         setupStatusItem()
         UpdateController.shared.start()
 
@@ -83,13 +86,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     /// Ensure a stable status item exists so System Settings → Menu Bar can list ScreenForge.
-    /// Do not flip activation policy — that confuses Tahoe StatusKit attribution.
+    /// Match PasteRush: no activation-policy flip, no autosaveName (Tahoe StatusKit poison).
     func reRegisterStatusItemForMenuBarAllowList() {
         AppServices.shared.settings.showMenuBarIcon = true
+        Self.clearLegacyStatusItemAutosaveDefaults()
         NSApp.setActivationPolicy(.accessory)
         setupStatusItem(forceRecreate: true)
         statusItem?.isVisible = true
-        NSApp.activate(ignoringOtherApps: true)
+        DiagnosticLog.shared.info("menubar.statusItem.reregistered visible=\(statusItem?.isVisible == true)")
     }
 
     private func setupStatusItem(forceRecreate: Bool = false) {
@@ -97,11 +101,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             NSStatusBar.system.removeStatusItem(existing)
             statusItem = nil
         }
-        if statusItem != nil { return }
+        if statusItem != nil {
+            statusItem?.isVisible = true
+            return
+        }
 
+        // PasteRush pattern: no autosaveName. Named autosave ("ScreenForgeMain") let
+        // Control Center persist VisibleCC=0 across relaunches; recreate could not recover.
         let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
-        // Stable identity for Control Center / StatusKit (PasteRush ends up as Item-0).
-        item.autosaveName = "ScreenForgeMain"
         item.isVisible = true
         if let button = item.button {
             let image = NSImage(systemSymbolName: "camera.viewfinder", accessibilityDescription: "ScreenForge")
@@ -111,6 +118,23 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         item.menu = buildMenu(services: AppServices.shared)
         statusItem = item
+        DiagnosticLog.shared.info("menubar.statusItem.created length=\(item.length) visible=\(item.isVisible)")
+    }
+
+    /// Older builds used autosaveName "ScreenForgeMain"; clear any leftover visibility prefs.
+    private static func clearLegacyStatusItemAutosaveDefaults() {
+        let d = UserDefaults.standard
+        let keys = [
+            "NSStatusItem Preferred Position ScreenForgeMain",
+            "NSStatusItem Visible ScreenForgeMain",
+            "NSStatusItem VisibleCC ScreenForgeMain"
+        ]
+        for key in keys {
+            if d.object(forKey: key) != nil {
+                d.removeObject(forKey: key)
+                DiagnosticLog.shared.info("menubar.clearedAutosave key=\(key)")
+            }
+        }
     }
 
     private func buildMenu(services: AppServices) -> NSMenu {
