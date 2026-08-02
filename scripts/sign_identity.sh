@@ -1,14 +1,17 @@
 #!/bin/bash
-# Resolve a stable codesign identity for ScreenForge releases.
-# Ad-hoc (`-`) embeds DR as raw CDHash → every rebuild invalidates Screen Recording TCC.
-# "ScreenForge Release" (self-signed, local) embeds certificate-rooted DR so grants survive updates.
-# This is NOT an Apple Developer ID — no paid account required.
+# Default release signing is ad-hoc (`-`), matching PasteRush and ScreenForge builds
+# that successfully registered Screen Recording with TCC.
+#
+# Optional: set SCREENFORGE_SIGN_IDENTITY (e.g. "ScreenForge Release") to use a
+# custom identity. Self-signed default was tried in 1.0.15–1.0.16 and broke TCC
+# registration on Tahoe — do not auto-pick it.
 
 _SCREENFORGE_SIGN_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 _SCREENFORGE_SIGNING_KC="${SCREENFORGE_SIGNING_KEYCHAIN:-/tmp/screenforge-signing.keychain-db}"
 _SCREENFORGE_SIGNING_KC_PASS="${SCREENFORGE_SIGNING_KEYCHAIN_PASSWORD:-screenforge-local}"
 
 ensure_screenforge_signing_identity() {
+  # Only used when SCREENFORGE_SIGN_IDENTITY is set explicitly to ScreenForge Release.
   if security find-identity -v -p codesigning 2>/dev/null | grep -Fq 'ScreenForge Release'; then
     if [[ -f "$_SCREENFORGE_SIGNING_KC" ]]; then
       security unlock-keychain -p "$_SCREENFORGE_SIGNING_KC_PASS" "$_SCREENFORGE_SIGNING_KC" 2>/dev/null || true
@@ -22,11 +25,7 @@ ensure_screenforge_signing_identity() {
   if [[ -z "$p12_pass" && -f "$pass_file" ]]; then
     p12_pass="$(tr -d '\n' < "$pass_file")"
   fi
-  if [[ ! -f "$p12" ]]; then
-    return 1
-  fi
-  if [[ -z "$p12_pass" ]]; then
-    echo "WARNING: $p12 present but no password (set SCREENFORGE_P12_PASSWORD or Secrets/screenforge_release.p12.password)"
+  if [[ ! -f "$p12" || -z "$p12_pass" ]]; then
     return 1
   fi
 
@@ -51,24 +50,21 @@ ensure_screenforge_signing_identity() {
 
 resolve_screenforge_sign_identity() {
   if [[ -n "${SCREENFORGE_SIGN_IDENTITY:-}" ]]; then
+    if [[ "$SCREENFORGE_SIGN_IDENTITY" == "ScreenForge Release" ]]; then
+      ensure_screenforge_signing_identity || true
+    fi
     printf '%s\n' "$SCREENFORGE_SIGN_IDENTITY"
     return 0
   fi
-  ensure_screenforge_signing_identity || true
-  if security find-identity -v -p codesigning 2>/dev/null | grep -Fq 'ScreenForge Release'; then
-    printf '%s\n' "ScreenForge Release"
-    return 0
-  fi
+  # Default: ad-hoc (PasteRush pattern). Do NOT auto-select ScreenForge Release.
   printf '%s\n' "-"
 }
 
 # Sign nested Mach-O / bundles inside-out so Sparkle matches the main binary identity.
-# Hardened runtime rejects Sparkle when Team IDs differ (self-signed main vs leftover nested sig).
 _sign_nested() {
   local root="$1"
   local identity="$2"
   local path
-  # Deepest first: XPC → appex → frameworks → helper apps
   while IFS= read -r path; do
     [[ -e "$path" ]] || continue
     echo "  nest-sign: $path"
@@ -86,13 +82,12 @@ sign_screenforge_app() {
   local identity
   identity="$(resolve_screenforge_sign_identity)"
 
-  if [[ -f "$_SCREENFORGE_SIGNING_KC" ]]; then
+  if [[ "$identity" != "-" && -f "$_SCREENFORGE_SIGNING_KC" ]]; then
     security unlock-keychain -p "$_SCREENFORGE_SIGNING_KC_PASS" "$_SCREENFORGE_SIGNING_KC" 2>/dev/null || true
   fi
 
   if [[ "$identity" == "-" ]]; then
-    echo "WARNING: signing ad-hoc (-). Screen Recording TCC will break on the next rebuild."
-    echo "         Place Secrets/screenforge_release.p12 (+ .password) or set SCREENFORGE_SIGN_IDENTITY."
+    echo "==> Codesign identity: ad-hoc (-)"
   else
     echo "==> Codesign identity: $identity"
   fi
@@ -108,10 +103,7 @@ sign_screenforge_app() {
   codesign --verify --deep --strict --verbose=2 "$target"
   echo "==> Designated requirement:"
   codesign -d -r- "$target" 2>&1 | sed -n 's/^.*designated => /designated => /p'
-  # Entitlements must include disable-library-validation when embedding Sparkle under a custom identity.
   if codesign -d --entitlements - "$target" 2>/dev/null | grep -Fq 'disable-library-validation'; then
     echo "==> library-validation: disabled (Sparkle OK)"
-  else
-    echo "WARNING: com.apple.security.cs.disable-library-validation missing — Sparkle may fail to load"
   fi
 }

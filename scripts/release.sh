@@ -94,9 +94,9 @@ If ScreenForge helps you: [Buy Me a Coffee](${BMC})
 
 ### Notes
 - macOS 26+
-- Grant **Screen Recording** on first launch (open only \`/Applications/ScreenForge.app\`)
-- Builds are signed with a **stable local “ScreenForge Release” identity** (not Apple Developer ID). Screen Recording should survive future updates signed with the same identity.
-- Upgrading from 1.0.14 or older (ad-hoc): use **Clear stale Screen Recording grants** once, then Request permission again.
+- Grant **Screen Recording** with **Request permission** in the app (system sheet). Do **not** add via Settings “+”.
+- Open only \`/Applications/ScreenForge.app\`
+- Ad-hoc signed (same as PasteRush / earlier ScreenForge builds that registered TCC)
 - First launch may require **Privacy & Security → Open Anyway**
 - Or: \`xattr -dr com.apple.quarantine /Applications/ScreenForge.app\`
 - See README → *macOS security warning* for details

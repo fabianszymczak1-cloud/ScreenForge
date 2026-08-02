@@ -112,7 +112,7 @@ struct OnboardingView: View {
             }
         }
         .padding(28)
-        .frame(width: 520, height: 560)
+        .frame(width: 520, height: 580)
         .task {
             await permissions.refreshAsync(probeCapture: true)
             launchAtLogin.refresh()
@@ -146,15 +146,22 @@ struct OnboardingView: View {
                 permissions.requestScreenRecording()
             }
             .disabled(permissions.isRefreshing)
-            Button(String(localized: "Open Screen Recording settings")) {
-                permissions.openScreenRecordingSettings()
-            }
+            .keyboardShortcut(.defaultAction)
+
+            Text(String(localized: "Use Request permission — macOS shows a system sheet. Do not add ScreenForge with the + button in Settings; that often does nothing. After you allow access, use Check again. macOS may quit the app — reopen and this screen returns."))
+                .font(.callout)
+                .foregroundStyle(.secondary)
+
             Button(String(localized: "Check again")) {
                 Task { await permissions.refreshAsync(probeCapture: true) }
             }
             .disabled(permissions.isRefreshing)
 
-            Text(String(localized: "After granting in System Settings, use Check again. macOS may quit the app — reopen ScreenForge and this screen returns automatically."))
+            Button(String(localized: "Open Screen Recording settings")) {
+                permissions.openScreenRecordingSettings()
+            }
+
+            Text(String(localized: "Settings is only to turn an existing ScreenForge row ON — not to add the app with +."))
                 .font(.callout)
                 .foregroundStyle(.secondary)
 
@@ -168,16 +175,19 @@ struct OnboardingView: View {
                     permissions.restartApp()
                 }
             } else if !permissions.hasScreenRecording && !permissions.isRefreshing {
-                Text(String(localized: "If Settings already lists ScreenForge but this screen still says missing, that row is for an old install. Clear stale grants, then Request permission from /Applications/ScreenForge.app only."))
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
-                Button(String(localized: "Clear stale Screen Recording grants")) {
-                    permissions.resetStaleScreenRecordingGrants()
-                }
-                Button(String(localized: "Relaunch ScreenForge")) {
-                    settings.hasCompletedOnboarding = false
-                    permissions.markRestoreOnboardingAfterTCC(resumeStep: step)
-                    permissions.restartApp()
+                DisclosureGroup(String(localized: "Still missing after Request permission?")) {
+                    Text(String(localized: "If Settings already lists ScreenForge but this screen still says missing, that row is for an old install. Last resort: clear stale grants, then tap Request permission again (not +)."))
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                        .padding(.top, 4)
+                    Button(String(localized: "Clear stale Screen Recording grants")) {
+                        permissions.resetStaleScreenRecordingGrants()
+                    }
+                    Button(String(localized: "Relaunch ScreenForge")) {
+                        settings.hasCompletedOnboarding = false
+                        permissions.markRestoreOnboardingAfterTCC(resumeStep: step)
+                        permissions.restartApp()
+                    }
                 }
             }
 

@@ -109,13 +109,18 @@ final class PermissionManager: NSObject, ObservableObject, NSWindowDelegate {
         _ = CGRequestScreenCaptureAccess()
         // Do not call SCShareableContent here — it races the system sheet / TCC quit.
         Task {
-            try? await Task.sleep(nanoseconds: 400_000_000)
-            await refreshAsync(probeCapture: false)
+            try? await Task.sleep(nanoseconds: 1_000_000_000)
+            let granted = await refreshAsync(probeCapture: false)
+            // If the sheet did not grant yet, open Settings only as a place to flip an
+            // existing row ON — do not rely on the Settings “+” picker (unreliable on Tahoe).
+            if !granted {
+                openScreenRecordingSettingsForReview()
+            }
         }
     }
 
     /// Clears Screen Recording TCC for current + legacy bundle IDs, then opens Settings.
-    /// Use when Settings shows ScreenForge ON but preflight stays false (stale identity).
+    /// Last resort only — after reset, Settings “+” will not re-add the app; use Request permission.
     func resetStaleScreenRecordingGrants() {
         markRestoreOnboardingAfterTCC()
         var ids = Self.legacyScreenCaptureBundleIDs
@@ -136,11 +141,16 @@ final class PermissionManager: NSObject, ObservableObject, NSWindowDelegate {
         }
         hasScreenRecording = false
         screenRecordingNeedsRelaunch = false
-        openScreenRecordingSettings()
+        openScreenRecordingSettingsForReview()
     }
 
     func openScreenRecordingSettings() {
         markRestoreOnboardingAfterTCC()
+        openScreenRecordingSettingsForReview()
+    }
+
+    /// Opens Privacy → Screen Recording for review/toggle. Adding via “+” is unreliable.
+    private func openScreenRecordingSettingsForReview() {
         let urls = [
             "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture",
             "x-apple.systempreferences:com.apple.settings.PrivacySecurity.extension?Privacy_ScreenCapture"

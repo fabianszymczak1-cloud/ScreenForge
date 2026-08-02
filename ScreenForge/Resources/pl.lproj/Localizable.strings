@@ -154,6 +154,10 @@
 "Request permission" = "Poproś o uprawnienie";
 "After granting in System Settings, use Check again. If macOS still requires a restart, use Relaunch." = "Po nadaniu w Ustawieniach systemowych użyj Sprawdź ponownie. Jeśli macOS nadal wymaga restartu, użyj Uruchom ponownie.";
 "After granting in System Settings, use Check again. macOS may quit the app — reopen ScreenForge and this screen returns automatically." = "Po nadaniu w Ustawieniach użyj Sprawdź ponownie. macOS może zamknąć aplikację — po ponownym otwarciu ten ekran wróci automatycznie.";
+"Use Request permission — macOS shows a system sheet. Do not add ScreenForge with the + button in Settings; that often does nothing. After you allow access, use Check again. macOS may quit the app — reopen and this screen returns." = "Użyj Poproś o uprawnienie — macOS pokaże systemowy komunikat. Nie dodawaj ScreenForge przyciskiem + w Ustawieniach; to często nic nie robi. Po zatwierdzeniu użyj Sprawdź ponownie. macOS może zamknąć aplikację — otwórz ją ponownie, a ten ekran wróci.";
+"Settings is only to turn an existing ScreenForge row ON — not to add the app with +." = "Ustawienia służą tylko do włączenia istniejącego wiersza ScreenForge — nie do dodawania aplikacji przez +.";
+"Still missing after Request permission?" = "Nadal brak po Poproś o uprawnienie?";
+"If Settings already lists ScreenForge but this screen still says missing, that row is for an old install. Last resort: clear stale grants, then tap Request permission again (not +)." = "Jeśli Ustawienia już pokazują ScreenForge, a ten ekran nadal mówi „brak”, ten wiersz dotyczy starej instalacji. Ostateczność: wyczyść stare wpisy, potem znów Poproś o uprawnienie (nie +).";
 "Permission is on. Continue, or relaunch if capture still fails." = "Uprawnienie jest włączone. Kontynuuj albo uruchom ponownie, jeśli zrzuty nadal nie działają.";
 "Pixelate" = "Pikselizacja";
 "Pixelate" = "Pixelate";

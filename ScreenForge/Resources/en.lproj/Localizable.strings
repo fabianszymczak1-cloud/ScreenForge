@@ -154,6 +154,10 @@
 "Request permission" = "Request permission";
 "After granting in System Settings, use Check again. If macOS still requires a restart, use Relaunch." = "After granting in System Settings, use Check again. If macOS still requires a restart, use Relaunch.";
 "After granting in System Settings, use Check again. macOS may quit the app — reopen ScreenForge and this screen returns automatically." = "After granting in System Settings, use Check again. macOS may quit the app — reopen ScreenForge and this screen returns automatically.";
+"Use Request permission — macOS shows a system sheet. Do not add ScreenForge with the + button in Settings; that often does nothing. After you allow access, use Check again. macOS may quit the app — reopen and this screen returns." = "Use Request permission — macOS shows a system sheet. Do not add ScreenForge with the + button in Settings; that often does nothing. After you allow access, use Check again. macOS may quit the app — reopen and this screen returns.";
+"Settings is only to turn an existing ScreenForge row ON — not to add the app with +." = "Settings is only to turn an existing ScreenForge row ON — not to add the app with +.";
+"Still missing after Request permission?" = "Still missing after Request permission?";
+"If Settings already lists ScreenForge but this screen still says missing, that row is for an old install. Last resort: clear stale grants, then tap Request permission again (not +)." = "If Settings already lists ScreenForge but this screen still says missing, that row is for an old install. Last resort: clear stale grants, then tap Request permission again (not +).";
 "Permission is on. Continue, or relaunch if capture still fails." = "Permission is on. Continue, or relaunch if capture still fails.";
 "Pixelate" = "Pixelate";
 "Pixelate" = "Pixelate";
