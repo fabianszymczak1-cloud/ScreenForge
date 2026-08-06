@@ -275,21 +275,27 @@ final class SettingsStore: ObservableObject {
     /// Copy `sf.*` keys from older bundle IDs (Tahoe StatusKit can poison an ID).
     private static func migrateLegacyPreferencesIfNeeded() {
         let current = UserDefaults.standard
-        if current.object(forKey: "sf.prefsMigratedToCaptureID") as? Bool == true { return }
+        if current.object(forKey: "sf.prefsMigratedToStudioID") as? Bool == true { return }
         let needsSeed = current.object(forKey: "sf.onboarding") == nil
         let legacyIDs = [
+            "app.screenforge.studio",
+            "app.screenforge.bar",
+            "app.screenforge.capture",
             "app.screenforge.macos",
             "com.screenforge.macos",
             "com.screenforge.app",
             "com.local.ScreenForge"
         ]
-        // Never import onboarding completion — a fresh identity must see welcome.
+        // Never import onboarding completion — a fresh identity must see welcome
+        // (Screen Recording + Menu Bar Allow list re-registration).
         let skipKeys: Set<String> = [
             "sf.onboarding",
             "sf.onboardingResumeStep",
             "sf.restoreOnboardingAfterTCC",
             "sf.prefsMigratedToAppScreenforge",
-            "sf.prefsMigratedToCaptureID"
+            "sf.prefsMigratedToCaptureID",
+            "sf.prefsMigratedToBarID",
+            "sf.prefsMigratedToStudioID"
         ]
         if needsSeed {
             for id in legacyIDs {
@@ -303,7 +309,7 @@ final class SettingsStore: ObservableObject {
                 if copied { break }
             }
         }
-        current.set(true, forKey: "sf.prefsMigratedToCaptureID")
+        current.set(true, forKey: "sf.prefsMigratedToStudioID")
     }
 
     /// Safe to call before NSApp exists (no-op). Always accessory with LSUIElement.

@@ -16,7 +16,7 @@ settings:
     CODE_SIGN_IDENTITY: "-"
     CODE_SIGN_STYLE: Manual
     DEVELOPMENT_TEAM: ""
-    ENABLE_HARDENED_RUNTIME: YES
+    ENABLE_HARDENED_RUNTIME: NO
     DEAD_CODE_STRIPPING: YES
 targets:
   ScreenForge:
@@ -35,8 +35,8 @@ targets:
     settings:
       base:
         CODE_SIGN_ENTITLEMENTS: ScreenForge/Resources/ScreenForge.entitlements
-        # Fresh ID: Tahoe StatusKit can poison a bundle ID (missing from Allow list / icon off-screen).
-        PRODUCT_BUNDLE_IDENTIFIER: app.screenforge.capture
+        # Fresh ID: Tahoe StatusKit poisons bundle IDs (missing from Allow list). capture was poisoned.
+        PRODUCT_BUNDLE_IDENTIFIER: app.screenforge.mac
         PRODUCT_NAME: ScreenForge
         INFOPLIST_FILE: ScreenForge/Resources/Info.plist
         GENERATE_INFOPLIST_FILE: NO
@@ -48,14 +48,14 @@ targets:
         INFOPLIST_KEY_CFBundleIconFile: AppIcon
         INFOPLIST_KEY_CFBundleIconName: AppIcon
         LD_RUNPATH_SEARCH_PATHS: "@executable_path/../Frameworks"
-        MARKETING_VERSION: "1.0.20"
-        CURRENT_PROJECT_VERSION: "1.0.20"
+        MARKETING_VERSION: "1.0.29"
+        CURRENT_PROJECT_VERSION: "1.0.29"
     info:
       path: ScreenForge/Resources/Info.plist
       properties:
         CFBundleName: ScreenForge
         CFBundleDisplayName: ScreenForge
-        CFBundleIdentifier: app.screenforge.capture
+        CFBundleIdentifier: app.screenforge.mac
         CFBundleShortVersionString: "$(MARKETING_VERSION)"
         CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
         CFBundleDevelopmentRegion: en

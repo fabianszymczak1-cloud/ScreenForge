@@ -23,6 +23,8 @@ final class NotificationService: NSObject, UNUserNotificationCenterDelegate {
             defer: false
         )
         panel.level = .statusBar
+        // The dismissal closure keeps the panel alive, so close must not release it as well.
+        panel.isReleasedWhenClosed = false
         panel.isOpaque = false
         panel.backgroundColor = .clear
         panel.hasShadow = true

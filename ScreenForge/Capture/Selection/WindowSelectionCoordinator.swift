@@ -142,7 +142,10 @@ final class WindowSelectionCoordinator {
         }
     }
 
-    private func cancel() {
+    /// Number of overlays currently on screen — lets the smoke suite drive a real selection.
+    var overlayCount: Int { overlayWindows.count }
+
+    func cancel() {
         guard continuation != nil else { return }
         tearDown()
         continuation?.resume(returning: nil)

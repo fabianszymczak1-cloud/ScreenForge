@@ -79,6 +79,7 @@ final class MenuBarController: NSObject {
             window.title = String(localized: "Capture history")
             window.setContentSize(NSSize(width: 720, height: 480))
             window.styleMask = [.titled, .closable, .resizable, .miniaturizable]
+            window.isReleasedWhenClosed = false
             window.center()
             historyWindow = window
         }

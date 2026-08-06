@@ -34,6 +34,11 @@ if [[ -z "$SIGN_UPDATE" ]]; then
   exit 1
 fi
 
+# Gate: unit tests plus the smoke suite against the build already in /Applications.
+if [[ "${SKIP_TESTS:-0}" != "1" ]]; then
+  "$ROOT/scripts/run_tests.sh"
+fi
+
 "$ROOT/scripts/make_dmg.sh" "$VERSION"
 DMG="$ROOT/build/dmg/$DMG_NAME"
 if [[ ! -f "$DMG" ]]; then
@@ -94,9 +99,21 @@ If ScreenForge helps you: [Buy Me a Coffee](${BMC})
 
 ### Notes
 - macOS 26+
+- Rectangles and ellipses can be rotated from the handle above the selection; hold Shift to snap to 15°.
+- Fixed a crash when picking a window to capture: the selection overlays were released twice, so the app died in the next autorelease pool drain.
+- Closed the same latent double-release in the countdown panel, the notification panel and the history window.
+- Window capture no longer gives up when macOS refuses to stream the first window it finds: helper and system windows are ranked below real ones, degenerate results are rejected, and a failed stream is retried.
+- Fixed display geometry reporting points where pixels were expected on Retina screens. "All displays" was stitched at half resolution, and "capture last region" silently refused any region in the right or bottom half of a screen.
+- The smoke suite now drives both pickers, the countdown, the notification panel and the history/settings windows through a full open/close round trip, and checks every capture is a plausible size.
+- Signed with a stable certificate instead of ad-hoc. Ad-hoc put a bare cdhash in the designated requirement, so every update looked like a different app: the Screen Recording grant died and the Menu Bar allow-list entry stopped matching for good. Measured: a certificate-signed app keeps its menu bar slot across a rebuild with a completely different cdhash; the ad-hoc one never does.
+- Bundle ID app.screenforge.mac — a final identity, because the previous ones were burned by ad-hoc rebuilds and no reset, toggle or reinstall revives them.
 - Grant **Screen Recording** with **Request permission** in the app (system sheet). Do **not** add via Settings “+”.
+- Updating from an older build leaves a dead Screen Recording entry that silently blocks the system sheet; ScreenForge now detects that, clears it and asks again automatically.
+- On launch ScreenForge verifies the icon is really rendered — not just created — and recovers by re-creating the item and reloading Control Center when an update left a stale binding.
 - Open only \`/Applications/ScreenForge.app\`
-- Ad-hoc signed (same as PasteRush / earlier ScreenForge builds that registered TCC)
+- After launch, ScreenForge must appear under System Settings → Menu Bar → Allow in the Menu Bar (turn ON)
+- If still missing: \`python3 scripts/fix_menubar_allowlist.py\` (Terminal may need Full Disk Access), or Reset Control Center…
+- Ad-hoc signed (same as PasteRush)
 - First launch may require **Privacy & Security → Open Anyway**
 - Or: \`xattr -dr com.apple.quarantine /Applications/ScreenForge.app\`
 - See README → *macOS security warning* for details

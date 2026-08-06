@@ -11,6 +11,9 @@ final class PermissionManager: NSObject, ObservableObject, NSWindowDelegate {
 
     /// Bundle IDs used by older ScreenForge builds — stale TCC rows can linger under these.
     static let legacyScreenCaptureBundleIDs = [
+        "app.screenforge.studio",
+        "app.screenforge.bar",
+        "app.screenforge.capture",
         "app.screenforge.macos",
         "com.local.ScreenForge"
     ]
@@ -24,6 +27,8 @@ final class PermissionManager: NSObject, ObservableObject, NSWindowDelegate {
     @Published private(set) var isCanonicalInstall = true
     private var onboardingWindow: NSWindow?
     private var permissionsWindow: NSWindow?
+    /// Auto-heal clears a real grant too, so it may run only once per launch.
+    private var didAutoHealTCCThisLaunch = false
 
     /// Persist before TCC can force-quit the process (Screen Recording grant).
     func markRestoreOnboardingAfterTCC(resumeStep: Int? = nil) {
@@ -50,9 +55,11 @@ final class PermissionManager: NSObject, ObservableObject, NSWindowDelegate {
     }
 
     @discardableResult
-    func refreshAsync(probeCapture: Bool = false) async -> Bool {
-        isRefreshing = true
-        defer { isRefreshing = false }
+    func refreshAsync(probeCapture: Bool = false, silent: Bool = false) async -> Bool {
+        if !silent {
+            isRefreshing = true
+        }
+        defer { if !silent { isRefreshing = false } }
         hasAccessibility = AXIsProcessTrusted()
         isCanonicalInstall = (Bundle.main.bundlePath as NSString).standardizingPath == Self.canonicalInstallPath
 
@@ -71,6 +78,13 @@ final class PermissionManager: NSObject, ObservableObject, NSWindowDelegate {
         }
 
         var needsRelaunch = false
+        if probeCapture, !granted, await Self.grantVisibleToFreshProcess() {
+            // Granted while we were running: only a new process can act on it.
+            DiagnosticLog.shared.info("screen.permission.grantedButProcessIsStale")
+            screenRecordingNeedsRelaunch = true
+            hasScreenRecording = false
+            return false
+        }
         if probeCapture && granted {
             // Only touch ScreenCaptureKit when preflight already passed. Probing while
             // denied re-triggers the system TCC sheet and does not fix a stale Settings row.
@@ -104,25 +118,108 @@ final class PermissionManager: NSObject, ObservableObject, NSWindowDelegate {
         }
     }
 
+    /// Ad-hoc signing pins the TCC identity to a CDHash, so every build looks like a new app.
+    /// A leftover row for this bundle ID makes macOS treat the decision as already made:
+    /// `CGRequestScreenCaptureAccess()` returns false without ever showing the system sheet.
+    /// That dead row must be cleared before asking again.
+    static func shouldAutoHealTCC(
+        requestResult: Bool,
+        preflightAfterRequest: Bool,
+        alreadyHealedThisLaunch: Bool
+    ) -> Bool {
+        !requestResult && !preflightAfterRequest && !alreadyHealedThisLaunch
+    }
+
     func requestScreenRecording() {
-        markRestoreOnboardingAfterTCC()
-        _ = CGRequestScreenCaptureAccess()
+        // Resume welcome on Screen Recording step after macOS force-quits on grant.
+        markRestoreOnboardingAfterTCC(resumeStep: 1)
+        Task { await performScreenRecordingRequest() }
+    }
+
+    private func performScreenRecordingRequest() async {
         // Do not call SCShareableContent here — it races the system sheet / TCC quit.
-        Task {
-            try? await Task.sleep(nanoseconds: 1_000_000_000)
-            let granted = await refreshAsync(probeCapture: false)
-            // If the sheet did not grant yet, open Settings only as a place to flip an
-            // existing row ON — do not rely on the Settings “+” picker (unreliable on Tahoe).
-            if !granted {
-                openScreenRecordingSettingsForReview()
+        // Do not auto-open Settings — that steals focus from the sheet and pushes users to “+”.
+        let prompted = CGRequestScreenCaptureAccess()
+        DiagnosticLog.shared.info("screen.permission.requestCG result=\(prompted)")
+
+        // A displayed sheet also returns false, and it stays up until answered. Wait it out
+        // before concluding that macOS never showed one — resetting TCC under a live sheet
+        // would tear down the very prompt the user is about to accept.
+        if await pollForScreenRecording(seconds: 30) { return }
+
+        guard Self.shouldAutoHealTCC(
+            requestResult: prompted,
+            preflightAfterRequest: CGPreflightScreenCaptureAccess(),
+            alreadyHealedThisLaunch: didAutoHealTCCThisLaunch
+        ) else {
+            DiagnosticLog.shared.info("screen.permission.requestCG.stillDenied afterPoll")
+            return
+        }
+
+        didAutoHealTCCThisLaunch = true
+        DiagnosticLog.shared.info("screen.permission.autoheal.reset")
+        resetScreenRecordingTCCEntries()
+        let reRequested = CGRequestScreenCaptureAccess()
+        DiagnosticLog.shared.info("screen.permission.autoheal.reRequest result=\(reRequested)")
+
+        if await pollForScreenRecording(seconds: 60) { return }
+        DiagnosticLog.shared.info("screen.permission.requestCG.stillDenied afterAutoHeal")
+    }
+
+    private func pollForScreenRecording(seconds: Int) async -> Bool {
+        for attempt in 1...(seconds * 2) {
+            try? await Task.sleep(nanoseconds: 500_000_000)
+            // Silent: a spinner toggling twice a second reads as a hang, not as progress.
+            if await refreshAsync(probeCapture: false, silent: true) {
+                DiagnosticLog.shared.info("screen.permission.requestCG.granted attempt=\(attempt)")
+                return true
+            }
+            guard attempt % 4 == 0, await Self.grantVisibleToFreshProcess() else { continue }
+            DiagnosticLog.shared.info("screen.permission.grantedButProcessIsStale restarting")
+            screenRecordingNeedsRelaunch = true
+            restartApp()
+            return true
+        }
+        return false
+    }
+
+    /// The TCC answer is decided once per process: after a denial at launch,
+    /// `CGPreflightScreenCaptureAccess()` keeps returning false here no matter what the user
+    /// grants afterwards. A short-lived child of this app asks again under the same identity,
+    /// which is the only way to notice the grant without quitting first.
+    static func grantVisibleToFreshProcess() async -> Bool {
+        guard let executable = Bundle.main.executableURL else { return false }
+        let process = Process()
+        process.executableURL = executable
+        process.arguments = [Self.preflightProbeArgument]
+        do {
+            try process.run()
+        } catch {
+            DiagnosticLog.shared.warn("screen.permission.freshProcess.failed \(error.localizedDescription)")
+            return false
+        }
+        return await withCheckedContinuation { continuation in
+            DispatchQueue.global(qos: .userInitiated).async {
+                process.waitUntilExit()
+                continuation.resume(returning: process.terminationStatus == 0)
             }
         }
     }
 
-    /// Clears Screen Recording TCC for current + legacy bundle IDs, then opens Settings.
-    /// Last resort only — after reset, Settings “+” will not re-add the app; use Request permission.
+    static let preflightProbeArgument = "--preflight-screen-recording"
+
+    /// Clears Screen Recording TCC for current + legacy bundle IDs.
+    /// Manual fallback — after reset, Settings “+” will not re-add the app; use Request permission.
     func resetStaleScreenRecordingGrants() {
         markRestoreOnboardingAfterTCC()
+        resetScreenRecordingTCCEntries()
+        hasScreenRecording = false
+        screenRecordingNeedsRelaunch = false
+        // Do not open Settings after reset — next step is Request permission (system sheet), not “+”.
+        DiagnosticLog.shared.info("screen.permission.tccutil.done tapRequestNext")
+    }
+
+    private func resetScreenRecordingTCCEntries() {
         var ids = Self.legacyScreenCaptureBundleIDs
         if let current = Bundle.main.bundleIdentifier {
             ids.insert(current, at: 0)
@@ -139,9 +236,6 @@ final class PermissionManager: NSObject, ObservableObject, NSWindowDelegate {
                 DiagnosticLog.shared.warn("screen.permission.tccutil.failed id=\(id) \(error.localizedDescription)")
             }
         }
-        hasScreenRecording = false
-        screenRecordingNeedsRelaunch = false
-        openScreenRecordingSettingsForReview()
     }
 
     func openScreenRecordingSettings() {
@@ -220,9 +314,9 @@ final class PermissionManager: NSObject, ObservableObject, NSWindowDelegate {
     func presentOnboarding() {
         if let existing = onboardingWindow {
             // Stay .accessory (PasteRush) — flipping Regular↔Accessory hides the status item on Tahoe.
-            existing.makeKeyAndOrderFront(nil)
-            existing.orderFrontRegardless()
             NSApp.activate(ignoringOtherApps: true)
+            existing.center()
+            existing.makeKeyAndOrderFront(nil)
             clearRestoreOnboardingAfterTCC()
             return
         }
@@ -240,18 +334,15 @@ final class PermissionManager: NSObject, ObservableObject, NSWindowDelegate {
         window.title = "ScreenForge"
         window.styleMask = [.titled, .closable]
         window.setContentSize(NSSize(width: 520, height: 580))
-        window.center()
         window.isReleasedWhenClosed = false
         window.delegate = self
-        window.level = .floating
-        window.collectionBehavior = [.moveToActiveSpace, .fullScreenAuxiliary]
 
+        // PasteRush-style: titled window only — no floating / fullScreenAuxiliary.
+        onboardingWindow = window
         NSApp.setActivationPolicy(.accessory)
+        NSApp.activate(ignoringOtherApps: true)
         window.center()
         window.makeKeyAndOrderFront(nil)
-        window.orderFrontRegardless()
-        NSApp.activate(ignoringOtherApps: true)
-        onboardingWindow = window
         clearRestoreOnboardingAfterTCC()
         DiagnosticLog.shared.info("onboarding.presented resumeStep=\(UserDefaults.standard.integer(forKey: Self.onboardingResumeStepKey))")
     }

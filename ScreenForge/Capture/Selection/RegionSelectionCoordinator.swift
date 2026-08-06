@@ -172,6 +172,9 @@ final class RegionSelectionCoordinator: RegionSelectionViewDelegate {
         }
     }
 
+    /// Number of overlays currently on screen — lets the smoke suite drive a real selection.
+    var overlayCount: Int { overlays.count }
+
     func regionSelectionDidCancel() {
         guard continuation != nil else { return }
         tearDown()

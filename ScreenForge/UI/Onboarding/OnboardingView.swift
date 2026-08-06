@@ -26,22 +26,7 @@ struct OnboardingView: View {
                 case 1:
                     screenRecordingStep
                 case 2:
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text(String(localized: "Allow ScreenForge in Menu Bar so the camera icon stays visible."))
-                        Text(String(localized: "In System Settings open Menu Bar, then scroll to “Allow in the Menu Bar” (Zezwalaj w pasku menu). ScreenForge appears only while the app is running."))
-                            .font(.callout)
-                            .foregroundStyle(.secondary)
-                        Button(String(localized: "Open Menu Bar settings")) {
-                            permissions.openMenuBarSettings()
-                        }
-                        Button(String(localized: "Register again in Menu Bar list")) {
-                            AppDelegate.shared?.reRegisterStatusItemForMenuBarAllowList()
-                            permissions.openMenuBarSettings()
-                        }
-                        Text(String(localized: "If ScreenForge is still missing: quit ScreenForge completely, eject any ScreenForge DMG, open only /Applications/ScreenForge.app from Finder (not from Terminal or Cursor), then open Menu Bar settings again. Toggle ScreenForge OFF then ON. You may also need Screen Recording again after a fresh install."))
-                            .font(.callout)
-                            .foregroundStyle(.secondary)
-                    }
+                    menuBarStep
                 case 3:
                     Text(String(localized: "Region capture shortcut: ⌃⇧1 — select an area to open the editor."))
                 case 4:
@@ -120,6 +105,30 @@ struct OnboardingView: View {
     }
 
     @ViewBuilder
+    private var menuBarStep: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text(String(localized: "The camera icon should appear in the menu bar automatically."))
+
+            if AppDelegate.shared?.hasMenuBarSlot == false {
+                Text(String(localized: "macOS is refusing the icon. Open Menu Bar settings and switch ScreenForge off and on again under “Allow in the Menu Bar”. If that changes nothing, the entry is broken on this Mac and only a new ScreenForge build with a fresh identity can fix it — the details are in the diagnostics log."))
+                    .font(.callout)
+                    .foregroundStyle(.orange)
+            } else {
+                Text(String(localized: "If it is missing, check System Settings → Menu Bar → Allow in the Menu Bar and make sure ScreenForge is on."))
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+            }
+
+            Button(String(localized: "Open Menu Bar settings")) {
+                permissions.openMenuBarSettings()
+            }
+            Button(String(localized: "Register again in Menu Bar list")) {
+                AppDelegate.shared?.reRegisterStatusItemForMenuBarAllowList()
+                permissions.openMenuBarSettings()
+            }
+        }
+    }
+
     private var screenRecordingStep: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text(String(localized: "Grant Screen Recording — required only to take screenshots."))
@@ -148,7 +157,7 @@ struct OnboardingView: View {
             .disabled(permissions.isRefreshing)
             .keyboardShortcut(.defaultAction)
 
-            Text(String(localized: "Use Request permission — macOS shows a system sheet. Do not add ScreenForge with the + button in Settings; that often does nothing. After you allow access, use Check again. macOS may quit the app — reopen and this screen returns."))
+            Text(String(localized: "Use Request permission — macOS shows a system sheet. If Settings still lists ScreenForge from an older build, that dead entry is cleared automatically and the sheet is shown again. Do not add the app with +. macOS may quit the app — reopen and this screen returns."))
                 .font(.callout)
                 .foregroundStyle(.secondary)
 
@@ -161,12 +170,12 @@ struct OnboardingView: View {
                 permissions.openScreenRecordingSettings()
             }
 
-            Text(String(localized: "Settings is only to turn an existing ScreenForge row ON — not to add the app with +."))
+            Text(String(localized: "Settings is for review only. A row left by an older build cannot be fixed by toggling it off and on."))
                 .font(.callout)
                 .foregroundStyle(.secondary)
 
             if permissions.screenRecordingNeedsRelaunch {
-                Text(String(localized: "Permission registered in this process, but capture needs a relaunch."))
+                Text(String(localized: "macOS has the permission, but this instance started before it was granted and cannot use it. Relaunch to finish."))
                     .font(.callout)
                     .foregroundStyle(.secondary)
                 Button(String(localized: "Relaunch ScreenForge")) {
@@ -176,7 +185,7 @@ struct OnboardingView: View {
                 }
             } else if !permissions.hasScreenRecording && !permissions.isRefreshing {
                 DisclosureGroup(String(localized: "Still missing after Request permission?")) {
-                    Text(String(localized: "If Settings already lists ScreenForge but this screen still says missing, that row is for an old install. Last resort: clear stale grants, then tap Request permission again (not +)."))
+                    Text(String(localized: "Automatic repair runs once per launch. If this screen still says missing, clear stale grants manually and tap Request permission again (not +)."))
                         .font(.callout)
                         .foregroundStyle(.secondary)
                         .padding(.top, 4)

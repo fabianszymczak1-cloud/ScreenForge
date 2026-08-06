@@ -1,5 +1,6 @@
 import SwiftUI
 import AppKit
+import CoreGraphics
 
 @main
 struct ScreenForgeApp: App {
@@ -18,8 +19,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     static weak var shared: AppDelegate?
 
     private(set) var lifecycle: AppLifecycleController?
-    private var statusItem: NSStatusItem?
-    private var repositionTask: Task<Void, Never>?
+    /// Exposed for tests — the app itself is the XCTest host, so the live item is inspectable.
+    private(set) var statusItem: NSStatusItem?
+    private var didRetryStatusItemSlot = false
+    /// False once every recovery step has failed, which means the menu bar allow list has the
+    /// bundle ID poisoned and only Reset Control Center in System Settings can clear it.
+    private(set) var hasMenuBarSlot = true
 
     func lifecycleRegisterHotkeysAfterOnboarding() {
         lifecycle?.registerHotkeysAfterOnboarding()
@@ -28,6 +33,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var isAutomatedRun: Bool {
         let args = ProcessInfo.processInfo.arguments
         return args.contains("--smoke-test") || args.contains("--docs-screenshots")
+    }
+
+    /// Answers the parent process's Screen Recording question and exits before any app state is
+    /// touched — this instance exists only to get an uncached answer out of tccd.
+    func applicationWillFinishLaunching(_ notification: Notification) {
+        if ProcessInfo.processInfo.arguments.contains(PermissionManager.preflightProbeArgument) {
+            exit(CGPreflightScreenCaptureAccess() ? 0 : 1)
+        }
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -42,19 +55,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             services.settings.showDockIcon = false
         }
 
-        for key in [
-            "NSStatusItem Preferred Position ScreenForgeMain",
-            "NSStatusItem Visible ScreenForgeMain",
-            "NSStatusItem VisibleCC ScreenForgeMain",
-            "NSStatusItem Preferred Position ScreenForgeStatus20",
-            "NSStatusItem Visible ScreenForgeStatus20",
-            "NSStatusItem VisibleCC ScreenForgeStatus20"
-        ] {
-            UserDefaults.standard.removeObject(forKey: key)
-        }
+        // Do not pre-seed VisibleCC — PasteRush lets Control Center write those keys.
+        // Pre-seeding can leave the app domain "visible" while StatusKit never tracks the host.
 
         setupStatusItem()
-        scheduleRepositionUntilVisible()
         UpdateController.shared.start()
 
         if services.settings.launchAtLogin {
@@ -91,10 +95,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         if statusItem == nil {
             setupStatusItem()
-        } else {
-            statusItem?.isVisible = true
         }
-        scheduleRepositionUntilVisible()
     }
 
     func reRegisterStatusItemForMenuBarAllowList() {
@@ -105,71 +106,64 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             statusItem = nil
         }
         setupStatusItem()
-        scheduleRepositionUntilVisible()
+        // Best-effort: repair Tahoe Control Center allow-list for this bundle ID.
+        MenuBarAllowListRepair.runIfPossible()
         DiagnosticLog.shared.info("menubar.reregistered")
     }
 
-    private func setupStatusItem() {
+    /// PasteRush-identical status item setup (variableLength, template image, strong ref).
+    func setupStatusItem() {
         if statusItem != nil { return }
 
-        let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
-        item.isVisible = true
-        if let button = item.button {
-            let image = NSImage(systemSymbolName: "camera.viewfinder", accessibilityDescription: "ScreenForge")
-            image?.isTemplate = true
-            button.image = image
+        statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
+        if let button = statusItem?.button {
+            button.image = NSImage(systemSymbolName: "camera.viewfinder", accessibilityDescription: "ScreenForge")
+            button.image?.isTemplate = true
             button.toolTip = "ScreenForge"
         }
-        item.menu = buildMenu(services: AppServices.shared)
-        statusItem = item
-        DiagnosticLog.shared.info("menubar.created frame=\(String(describing: item.button?.window?.frame))")
+        statusItem?.menu = buildMenu(services: AppServices.shared)
+        DiagnosticLog.shared.info("menubar.created")
+        verifyStatusItemSlot()
     }
 
-    /// Tahoe parks new items at x≈screenMax (clipped) or y=-17. Drag the status window
-    /// into the visible cluster (same zone as PasteRush ~540pt from the trailing system icons).
-    private func scheduleRepositionUntilVisible() {
-        guard !isAutomatedRun else { return }
-        repositionTask?.cancel()
-        repositionTask = Task { @MainActor in
-            for attempt in 1...8 {
-                try? await Task.sleep(nanoseconds: 400_000_000)
-                guard !Task.isCancelled else { return }
-                guard let item = statusItem, let button = item.button else { continue }
-                item.isVisible = true
-
-                // Force layout
-                button.needsDisplay = true
-                button.window?.displayIfNeeded()
-
-                guard let window = button.window, let screen = window.screen ?? NSScreen.main else {
-                    DiagnosticLog.shared.info("menubar.reposition#\(attempt) no window yet")
-                    continue
-                }
-
-                var f = window.frame
-                let before = f
-                // Place ~280pt left of the trailing screen edge (left of clock/battery cluster).
-                let targetX = screen.frame.maxX - 280
-                let targetY = screen.frame.maxY - max(f.height, 22)
-                f.size.width = max(f.size.width, 22)
-                f.size.height = max(f.size.height, 22)
-                f.origin.x = targetX
-                f.origin.y = targetY
-                window.setFrame(f, display: true)
-
-                let after = window.frame
-                DiagnosticLog.shared.info(
-                    "menubar.reposition#\(attempt) before=\(before) after=\(after) targetX=\(targetX)"
-                )
-
-                if after.origin.y >= 0, after.height >= 16,
-                   after.origin.x + after.width < screen.frame.maxX - 4,
-                   after.origin.x < screen.frame.maxX - 40 {
-                    DiagnosticLog.shared.info("menubar.visible")
-                    return
-                }
+    /// StatusKit can refuse the item silently: `isVisible` stays true while the button window sits
+    /// parked below the menu bar. Escalate once per launch, cheapest step first.
+    private func verifyStatusItemSlot() {
+        guard !didRetryStatusItemSlot else { return }
+        Task { @MainActor in
+            switch await MenuBarSlotProbe.resolve(self.statusItem, timeout: 4) {
+            case .rendered(let frame):
+                DiagnosticLog.shared.info("menubar.slot.rendered frame=\(NSStringFromRect(frame))")
+                return
+            case .menuBarHidden:
+                DiagnosticLog.shared.info("menubar.slot.menuBarHidden")
+                return
+            case .refused(let frame):
+                DiagnosticLog.shared.info("menubar.slot.refused frame=\(NSStringFromRect(frame))")
             }
-            DiagnosticLog.shared.error("menubar.reposition.failed")
+
+            didRetryStatusItemSlot = true
+            if let item = statusItem {
+                NSStatusBar.system.removeStatusItem(item)
+            }
+            statusItem = nil
+            setupStatusItem()
+            DiagnosticLog.shared.info("menubar.slot.recreated")
+
+            if case .rendered = await MenuBarSlotProbe.resolve(self.statusItem, timeout: 4) {
+                DiagnosticLog.shared.info("menubar.slot.recoveredByRecreate")
+                return
+            }
+
+            // An update swapped the bundle under a running Control Center: it still holds the
+            // binding from the previous copy and only re-reads the list after a restart.
+            MenuBarAllowListRepair.reloadControlCenter()
+            if case .rendered = await MenuBarSlotProbe.resolve(self.statusItem, timeout: 8) {
+                DiagnosticLog.shared.info("menubar.slot.recoveredByControlCenterReload")
+                return
+            }
+            hasMenuBarSlot = false
+            DiagnosticLog.shared.warn("menubar.slot.unavailable needsControlCenterReset")
         }
     }
 
@@ -210,17 +204,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         return menu
     }
 
-    func applicationDidBecomeActive(_ notification: Notification) {
-        guard AppServices.shared.settings.showMenuBarIcon else { return }
-        scheduleRepositionUntilVisible()
-    }
-
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
         false
     }
 
     func applicationWillTerminate(_ notification: Notification) {
-        repositionTask?.cancel()
         lifecycle?.prepareForTermination()
     }
 

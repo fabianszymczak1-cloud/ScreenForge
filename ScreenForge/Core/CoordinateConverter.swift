@@ -25,18 +25,12 @@ struct CoordinateConverter: Sendable {
             width: framePoints.width * scale,
             height: framePoints.height * scale
         )
-        // Prefer CGDisplayBounds for pixel accuracy when available
-        let cgBounds = CGDisplayBounds(id)
-        let pixelFrame: CGRect
-        if cgBounds.width > 0 && cgBounds.height > 0 {
-            pixelFrame = cgBounds
-        } else {
-            pixelFrame = framePixels
-        }
+        // CGDisplayBounds looks like the authoritative source but reports points in a top-left
+        // space, so using it here silently halved every pixel rect on a Retina display.
         return DisplayGeometry(
             displayID: id,
             framePoints: framePoints,
-            framePixels: pixelFrame,
+            framePixels: framePixels,
             scale: scale
         )
     }

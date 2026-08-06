@@ -4,6 +4,18 @@ import AppKit
 final class RegionOverlayWindow: NSWindow {
     override var canBecomeKey: Bool { true }
     override var canBecomeMain: Bool { true }
+
+    override init(
+        contentRect: NSRect,
+        styleMask style: NSWindow.StyleMask,
+        backing backingStoreType: NSWindow.BackingStoreType,
+        defer flag: Bool
+    ) {
+        super.init(contentRect: contentRect, styleMask: style, backing: backingStoreType, defer: flag)
+        // Callers hold the overlay themselves and close it explicitly. The AppKit default would
+        // release it a second time on close, crashing the next autorelease pool drain.
+        isReleasedWhenClosed = false
+    }
 }
 
 @MainActor

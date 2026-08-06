@@ -26,11 +26,13 @@ final class CanvasView: NSView {
     private enum ResizeHandle: Equatable {
         case none, n, s, e, w, ne, nw, se, sw
         case lineStart, lineEnd
+        case rotate
     }
     private var activeResizeHandle: ResizeHandle = .none
     private var resizingID: UUID?
     private var resizeOriginFrame: CGRect = .zero
     private var resizeOriginPoints: [CGPoint]?
+    private var resizeOriginRotation: CGFloat = 0
 
     private static let canvasMargin: CGFloat = 16
 
@@ -107,11 +109,23 @@ final class CanvasView: NSView {
                 drawHandle(at: CGPoint(x: circle.midX + side / 2 + 3, y: circle.midY))
             } else {
                 let r = docToView(obj.frame)
+                let center = CGPoint(x: r.midX, y: r.midY)
+                let rotation = Self.supportsRotation(obj.type) ? obj.rotation : 0
                 NSColor.systemTeal.setStroke()
-                let path = NSBezierPath(rect: r)
+                let path = NSBezierPath()
+                let corners = [
+                    CGPoint(x: r.minX, y: r.minY), CGPoint(x: r.maxX, y: r.minY),
+                    CGPoint(x: r.maxX, y: r.maxY), CGPoint(x: r.minX, y: r.maxY),
+                ].map { Self.rotatePoint($0, around: center, degrees: rotation) }
+                path.move(to: corners[0])
+                for c in corners.dropFirst() { path.line(to: c) }
+                path.close()
                 path.lineWidth = 1.5
                 path.stroke()
-                drawHandles(r)
+                drawHandles(r, rotation: rotation)
+                if Self.supportsRotation(obj.type) {
+                    drawRotationHandle(for: r, rotation: rotation)
+                }
             }
         }
 
@@ -144,6 +158,24 @@ final class CanvasView: NSView {
         [.step, .warning, .checkmark, .crossmark].contains(type)
     }
 
+    private static func supportsRotation(_ type: CanvasObjectType) -> Bool {
+        ShapeRotationMath.supportsRotation(type)
+    }
+
+    private static func rotatePoint(_ point: CGPoint, around center: CGPoint, degrees: CGFloat) -> CGPoint {
+        ShapeRotationMath.rotatePoint(point, around: center, degrees: degrees)
+    }
+
+    private static func rotationDegrees(from center: CGPoint, to point: CGPoint) -> CGFloat {
+        ShapeRotationMath.rotationDegrees(from: center, to: point)
+    }
+
+    private static func rotationHandleAnchor(for frame: CGRect) -> (stem: CGPoint, handle: CGPoint) {
+        let stem = CGPoint(x: frame.midX, y: frame.minY)
+        let handle = CGPoint(x: frame.midX, y: frame.minY - 28)
+        return (stem, handle)
+    }
+
     private static func normalizedRect(from a: CGPoint, to b: CGPoint) -> CGRect {
         CGRect(
             x: min(a.x, b.x),
@@ -153,13 +185,32 @@ final class CanvasView: NSView {
         )
     }
 
-    private func drawHandles(_ r: CGRect) {
+    private func drawHandles(_ r: CGRect, rotation: CGFloat = 0) {
+        let center = CGPoint(x: r.midX, y: r.midY)
         let pts = [
             CGPoint(x: r.minX, y: r.minY), CGPoint(x: r.midX, y: r.minY), CGPoint(x: r.maxX, y: r.minY),
             CGPoint(x: r.minX, y: r.midY), CGPoint(x: r.maxX, y: r.midY),
             CGPoint(x: r.minX, y: r.maxY), CGPoint(x: r.midX, y: r.maxY), CGPoint(x: r.maxX, y: r.maxY),
-        ]
+        ].map { Self.rotatePoint($0, around: center, degrees: rotation) }
         for p in pts { drawHandle(at: p) }
+    }
+
+    private func drawRotationHandle(for frame: CGRect, rotation: CGFloat) {
+        let center = CGPoint(x: frame.midX, y: frame.midY)
+        let anchors = Self.rotationHandleAnchor(for: frame)
+        let stem = Self.rotatePoint(anchors.stem, around: center, degrees: rotation)
+        let handle = Self.rotatePoint(anchors.handle, around: center, degrees: rotation)
+        NSColor.systemTeal.setStroke()
+        let line = NSBezierPath()
+        line.move(to: stem)
+        line.line(to: handle)
+        line.lineWidth = 1.5
+        line.stroke()
+        NSColor.white.setFill()
+        NSColor.systemTeal.setStroke()
+        let circle = NSBezierPath(ovalIn: CGRect(x: handle.x - 6, y: handle.y - 6, width: 12, height: 12))
+        circle.fill()
+        circle.stroke()
     }
 
     private func drawHandle(at p: CGPoint) {
@@ -190,6 +241,18 @@ final class CanvasView: NSView {
                 continue
             }
             let r = docToView(obj.frame)
+            let center = CGPoint(x: r.midX, y: r.midY)
+            let rotation = Self.supportsRotation(obj.type) ? obj.rotation : 0
+            if Self.supportsRotation(obj.type) {
+                let handle = Self.rotatePoint(
+                    Self.rotationHandleAnchor(for: r).handle,
+                    around: center,
+                    degrees: rotation
+                )
+                if hypot(viewP.x - handle.x, viewP.y - handle.y) <= hitRadius + 2 {
+                    return (obj.id, .rotate)
+                }
+            }
             let handles: [(ResizeHandle, CGPoint)] = [
                 (.nw, CGPoint(x: r.minX, y: r.minY)),
                 (.n,  CGPoint(x: r.midX, y: r.minY)),
@@ -201,7 +264,8 @@ final class CanvasView: NSView {
                 (.se, CGPoint(x: r.maxX, y: r.maxY)),
             ]
             for (h, pt) in handles {
-                if abs(viewP.x - pt.x) <= hitRadius && abs(viewP.y - pt.y) <= hitRadius {
+                let world = Self.rotatePoint(pt, around: center, degrees: rotation)
+                if abs(viewP.x - world.x) <= hitRadius && abs(viewP.y - world.y) <= hitRadius {
                     return (obj.id, h)
                 }
             }
@@ -348,6 +412,7 @@ final class CanvasView: NSView {
                 resizingID = id
                 resizeOriginFrame = obj.frame
                 resizeOriginPoints = obj.points
+                resizeOriginRotation = obj.rotation
                 dragStart = docP
                 document.undoCoordinator.beginGroup()
                 needsDisplay = true
@@ -453,7 +518,18 @@ final class CanvasView: NSView {
             if let id = resizingID, activeResizeHandle != .none,
            let i = document.objects.firstIndex(where: { $0.id == id }) {
             let lockAspect = event.modifierFlags.contains(.shift) || Self.isBadgeObject(document.objects[i].type)
-            if activeResizeHandle == .lineStart || activeResizeHandle == .lineEnd {
+            if activeResizeHandle == .rotate {
+                let frame = document.objects[i].frame
+                let center = CGPoint(x: frame.midX, y: frame.midY)
+                var degrees = Self.rotationDegrees(from: center, to: docP)
+                if event.modifierFlags.contains(.shift) {
+                    degrees = (degrees / 15).rounded() * 15
+                }
+                // Normalize to (-180, 180]
+                if degrees > 180 { degrees -= 360 }
+                if degrees <= -180 { degrees += 360 }
+                document.objects[i].rotation = degrees
+            } else if activeResizeHandle == .lineStart || activeResizeHandle == .lineEnd {
                 var pts = resizeOriginPoints ?? document.objects[i].points ?? []
                 guard pts.count >= 2 else { return }
                 if activeResizeHandle == .lineStart {
@@ -469,9 +545,14 @@ final class CanvasView: NSView {
                     height: max(ys.max()! - ys.min()!, 1)
                 )
             } else {
+                let rotation = document.objects[i].rotation
+                let center = CGPoint(x: resizeOriginFrame.midX, y: resizeOriginFrame.midY)
+                let localP = Self.supportsRotation(document.objects[i].type) && rotation != 0
+                    ? Self.rotatePoint(docP, around: center, degrees: -rotation)
+                    : docP
                 let newFrame = resizedFrame(
                     origin: resizeOriginFrame,
-                    to: docP,
+                    to: localP,
                     handle: activeResizeHandle,
                     lockAspect: lockAspect
                 )
@@ -557,6 +638,7 @@ final class CanvasView: NSView {
             activeResizeHandle = .none
             resizeOriginPoints = nil
             resizeOriginFrame = .zero
+            resizeOriginRotation = 0
             dragStart = nil
             onChange?()
             needsDisplay = true
@@ -660,19 +742,23 @@ final class CanvasView: NSView {
               let obj = document.objects.first(where: { $0.id == id }) else { return }
         let beforeFrame = resizeOriginFrame
         let beforePoints = resizeOriginPoints
+        let beforeRotation = resizeOriginRotation
         let afterFrame = obj.frame
         let afterPoints = obj.points
-        guard beforeFrame != afterFrame || beforePoints != afterPoints else { return }
+        let afterRotation = obj.rotation
+        guard beforeFrame != afterFrame || beforePoints != afterPoints || beforeRotation != afterRotation else { return }
         document.undoCoordinator.register(UndoCommand(
             undo: { [weak document] in
                 guard let document, let i = document.objects.firstIndex(where: { $0.id == id }) else { return }
                 document.objects[i].frame = beforeFrame
                 document.objects[i].points = beforePoints
+                document.objects[i].rotation = beforeRotation
             },
             redo: { [weak document] in
                 guard let document, let i = document.objects.firstIndex(where: { $0.id == id }) else { return }
                 document.objects[i].frame = afterFrame
                 document.objects[i].points = afterPoints
+                document.objects[i].rotation = afterRotation
             }
         ))
     }
@@ -793,7 +879,15 @@ final class CanvasView: NSView {
     }
 
     private func hitTestObject(_ p: CGPoint) -> CanvasObject? {
-        document.objects.sorted { $0.zIndex > $1.zIndex }.first { $0.isVisible && !$0.isLocked && $0.frame.insetBy(dx: -4, dy: -4).contains(p) }
+        document.objects.sorted { $0.zIndex > $1.zIndex }.first { obj in
+            guard obj.isVisible, !obj.isLocked else { return false }
+            if Self.supportsRotation(obj.type), obj.rotation != 0 {
+                let center = CGPoint(x: obj.frame.midX, y: obj.frame.midY)
+                let local = Self.rotatePoint(p, around: center, degrees: -obj.rotation)
+                return obj.frame.insetBy(dx: -4, dy: -4).contains(local)
+            }
+            return obj.frame.insetBy(dx: -4, dy: -4).contains(p)
+        }
     }
 
     override func keyDown(with event: NSEvent) {

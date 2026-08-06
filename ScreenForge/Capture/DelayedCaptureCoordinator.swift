@@ -27,6 +27,8 @@ final class DelayedCaptureCoordinator {
             defer: false
         )
         panel.contentView = container
+        // Held in `self.panel` and closed by hand — without this, close releases it a second time.
+        panel.isReleasedWhenClosed = false
         panel.isOpaque = false
         panel.backgroundColor = .clear
         panel.level = .floating

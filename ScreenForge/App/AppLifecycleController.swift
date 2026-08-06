@@ -36,10 +36,6 @@ final class AppLifecycleController {
             DispatchQueue.main.async {
                 self.services.permissions.presentOnboarding()
             }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
-                guard !self.services.settings.hasCompletedOnboarding else { return }
-                self.services.permissions.presentOnboarding()
-            }
             Task { _ = await services.permissions.refreshAsync() }
         }
 

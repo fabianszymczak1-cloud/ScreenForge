@@ -35,7 +35,7 @@ struct PermissionsGateView: View {
             .disabled(permissions.isRefreshing)
             .keyboardShortcut(.defaultAction)
 
-            Text(String(localized: "Use Request permission — macOS shows a system sheet. Do not add ScreenForge with the + button in Settings; that often does nothing. After you allow access, use Check again. macOS may quit the app — reopen and this screen returns."))
+            Text(String(localized: "Use Request permission — macOS shows a system sheet. If Settings still lists ScreenForge from an older build, that dead entry is cleared automatically and the sheet is shown again. Do not add the app with +. macOS may quit the app — reopen and this screen returns."))
                 .font(.callout)
                 .foregroundStyle(.secondary)
 
@@ -48,12 +48,12 @@ struct PermissionsGateView: View {
                 permissions.openScreenRecordingSettings()
             }
 
-            Text(String(localized: "Settings is only to turn an existing ScreenForge row ON — not to add the app with +."))
+            Text(String(localized: "Settings is for review only. A row left by an older build cannot be fixed by toggling it off and on."))
                 .font(.callout)
                 .foregroundStyle(.secondary)
 
             if permissions.screenRecordingNeedsRelaunch {
-                Text(String(localized: "Permission registered in this process, but capture needs a relaunch."))
+                Text(String(localized: "macOS has the permission, but this instance started before it was granted and cannot use it. Relaunch to finish."))
                     .font(.callout)
                     .foregroundStyle(.secondary)
                 Button(String(localized: "Relaunch ScreenForge")) {
@@ -62,7 +62,7 @@ struct PermissionsGateView: View {
                 }
             } else if !permissions.hasScreenRecording && !permissions.isRefreshing {
                 DisclosureGroup(String(localized: "Still missing after Request permission?")) {
-                    Text(String(localized: "If Settings already lists ScreenForge but this screen still says missing, that row is for an old install. Last resort: clear stale grants, then tap Request permission again (not +)."))
+                    Text(String(localized: "Automatic repair runs once per launch. If this screen still says missing, clear stale grants manually and tap Request permission again (not +)."))
                         .font(.callout)
                         .foregroundStyle(.secondary)
                         .padding(.top, 4)

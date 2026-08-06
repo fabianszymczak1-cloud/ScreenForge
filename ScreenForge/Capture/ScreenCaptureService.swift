@@ -83,31 +83,65 @@ final class ScreenCaptureService {
         let windows = try await provider.availableWindows()
         let front = NSWorkspace.shared.frontmostApplication
         let bundleID = front?.bundleIdentifier
-        guard let scWindow = windows.first(where: { $0.owningApplication?.bundleIdentifier == bundleID && $0.isOnScreen })
-                ?? windows.first else {
-            throw CaptureError.noWindow
+
+        // Panels, tooltips and helper windows are on the list too, and ScreenCaptureKit refuses
+        // to start a stream for some of them. Rank real windows first and move on when one fails.
+        let candidates = windows
+            .filter { window in
+                window.isOnScreen
+                    && window.owningApplication?.bundleIdentifier != Bundle.main.bundleIdentifier
+                    && window.frame.width >= 80 && window.frame.height >= 80
+            }
+            .sorted { lhs, rhs in
+                let lhsFront = lhs.owningApplication?.bundleIdentifier == bundleID
+                let rhsFront = rhs.owningApplication?.bundleIdentifier == bundleID
+                if lhsFront != rhsFront { return lhsFront }
+                return lhs.frame.width * lhs.frame.height > rhs.frame.width * rhs.frame.height
+            }
+        guard !candidates.isEmpty else { throw CaptureError.noWindow }
+
+        var lastError: Error?
+        for scWindow in candidates.prefix(4) {
+            nonisolated(unsafe) let windowRef = scWindow
+            do {
+                var image = try await provider.captureWindow(windowRef, includeShadow: includeShadow)
+                if margin > 0, let padded = padImage(image, margin: Int(margin)) {
+                    image = padded
+                }
+                image = ImageAlphaTrimmer.trimTransparentEdges(image) ?? image
+                // A fully translucent window trims down to a sliver — worthless as a screenshot.
+                guard image.width >= 32, image.height >= 32 else {
+                    DiagnosticLog.shared.warn("capture.window.degenerate \(image.width)x\(image.height)")
+                    continue
+                }
+                return CaptureResult(
+                    image: image,
+                    kind: .window,
+                    sourceAppName: scWindow.owningApplication?.applicationName ?? front?.localizedName,
+                    sourceWindowTitle: scWindow.title
+                )
+            } catch {
+                lastError = error
+                DiagnosticLog.shared.warn("capture.window.skipped app=\(scWindow.owningApplication?.applicationName ?? "?") \(error.localizedDescription)")
+            }
         }
-        let appName = scWindow.owningApplication?.applicationName ?? front?.localizedName
-        let title = scWindow.title
-        nonisolated(unsafe) let windowRef = scWindow
-        var image = try await provider.captureWindow(windowRef, includeShadow: includeShadow)
-        if margin > 0, let padded = padImage(image, margin: Int(margin)) {
-            image = padded
-        }
-        image = ImageAlphaTrimmer.trimTransparentEdges(image) ?? image
-        return CaptureResult(
-            image: image,
-            kind: .window,
-            sourceAppName: appName,
-            sourceWindowTitle: title
-        )
+        throw lastError ?? CaptureError.noWindow
     }
 
     func captureSCWindow(_ window: SCWindow, includeShadow: Bool, margin: Double) async throws -> CaptureResult {
         let appName = window.owningApplication?.applicationName
         let title = window.title
         nonisolated(unsafe) let windowRef = window
-        var image = try await provider.captureWindow(windowRef, includeShadow: includeShadow)
+        var image: CGImage
+        do {
+            image = try await provider.captureWindow(windowRef, includeShadow: includeShadow)
+        } catch {
+            // The picker overlay is still tearing down when this runs, and a stream that starts
+            // mid-teardown can fail once. One retry costs nothing and saves the capture.
+            DiagnosticLog.shared.warn("capture.window.retry \(error.localizedDescription)")
+            try? await Task.sleep(nanoseconds: 250_000_000)
+            image = try await provider.captureWindow(windowRef, includeShadow: includeShadow)
+        }
         if margin > 0, let padded = padImage(image, margin: Int(margin)) {
             image = padded
         }
