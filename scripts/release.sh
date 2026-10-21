@@ -99,6 +99,7 @@ If ScreenForge helps you: [Buy Me a Coffee](${BMC})
 
 ### Notes
 - macOS 26+
+- Capture overlays no longer join the fullscreen or Split View space as the app's main window. That affinity was what made Mission Control and Dock clicks bounce back to the fullscreen app after ScreenForge had been running; three-finger swipes kept working because they bypass it.
 - Rectangles and ellipses can be rotated from the handle above the selection; hold Shift to snap to 15°.
 - Fixed a crash when picking a window to capture: the selection overlays were released twice, so the app died in the next autorelease pool drain.
 - Closed the same latent double-release in the countdown panel, the notification panel and the history window.

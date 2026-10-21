@@ -15,6 +15,11 @@ final class OverlayWindowLifetimeTests: XCTestCase {
             defer: false
         )
         XCTAssertFalse(window.isReleasedWhenClosed)
+        XCTAssertFalse(window.canBecomeMain)
+        XCTAssertTrue(window.styleMask.contains(.nonactivatingPanel))
+        XCTAssertTrue(window.collectionBehavior.contains(.transient))
+        XCTAssertTrue(window.collectionBehavior.contains(.fullScreenAuxiliary))
+        XCTAssertFalse(window.isRestorable)
     }
 
     func testClosingHeldOverlaysLeavesThemUsable() {

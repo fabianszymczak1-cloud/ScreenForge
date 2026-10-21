@@ -50,7 +50,7 @@ final class EditorWindowManager {
         }
         controllers[document.id] = wc
         wc.showWindow(nil)
-        NSApp.activate(ignoringOtherApps: true)
+        AppActivation.activateForDocumentWindow()
         if AppServices.shared.settings.editorFitOnOpen {
             wc.canvasView.fitToWindow()
         }
@@ -89,6 +89,8 @@ final class EditorWindowController: NSWindowController, NSWindowDelegate {
         window.title = "ScreenForge"
         window.center()
         window.minSize = NSSize(width: 700, height: 480)
+        window.isRestorable = false
+        window.collectionBehavior = [.managed, .participatesInCycle]
         super.init(window: window)
         window.delegate = self
         setupUI()
@@ -280,7 +282,7 @@ final class EditorWindowController: NSWindowController, NSWindowDelegate {
         AppServices.shared.notifications.show(title: String(localized: "Capture copied"), body: nil)
         documentModel.isDirty = false
         close()
-        previousApp?.activate(options: [.activateIgnoringOtherApps])
+        AppActivation.yield(to: previousApp)
         if AppServices.shared.settings.autoPasteAfterCopy {
             // handled in router typically
         }

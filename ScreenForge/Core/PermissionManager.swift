@@ -314,7 +314,7 @@ final class PermissionManager: NSObject, ObservableObject, NSWindowDelegate {
     func presentOnboarding() {
         if let existing = onboardingWindow {
             // Stay .accessory (PasteRush) — flipping Regular↔Accessory hides the status item on Tahoe.
-            NSApp.activate(ignoringOtherApps: true)
+            NSApp.activate()
             existing.center()
             existing.makeKeyAndOrderFront(nil)
             clearRestoreOnboardingAfterTCC()
@@ -335,12 +335,13 @@ final class PermissionManager: NSObject, ObservableObject, NSWindowDelegate {
         window.styleMask = [.titled, .closable]
         window.setContentSize(NSSize(width: 520, height: 580))
         window.isReleasedWhenClosed = false
+        window.isRestorable = false
         window.delegate = self
 
         // PasteRush-style: titled window only — no floating / fullScreenAuxiliary.
         onboardingWindow = window
         NSApp.setActivationPolicy(.accessory)
-        NSApp.activate(ignoringOtherApps: true)
+        NSApp.activate()
         window.center()
         window.makeKeyAndOrderFront(nil)
         clearRestoreOnboardingAfterTCC()
@@ -354,7 +355,7 @@ final class PermissionManager: NSObject, ObservableObject, NSWindowDelegate {
         }
         if let existing = permissionsWindow {
             existing.makeKeyAndOrderFront(nil)
-            NSApp.activate(ignoringOtherApps: true)
+            NSApp.activate()
             return
         }
         closeOnboardingWindow()
@@ -368,9 +369,10 @@ final class PermissionManager: NSObject, ObservableObject, NSWindowDelegate {
         window.setContentSize(NSSize(width: 520, height: 460))
         window.center()
         window.isReleasedWhenClosed = false
+        window.isRestorable = false
         window.delegate = self
         window.makeKeyAndOrderFront(nil)
-        NSApp.activate(ignoringOtherApps: true)
+        NSApp.activate()
         permissionsWindow = window
     }
 

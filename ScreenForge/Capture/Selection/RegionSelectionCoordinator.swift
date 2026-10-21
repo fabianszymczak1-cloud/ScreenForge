@@ -12,7 +12,6 @@ final class RegionSelectionCoordinator: RegionSelectionViewDelegate {
     private var overlays: [RegionOverlayWindowController] = []
     private var frozen: [CGDirectDisplayID: CGImage] = [:]
     private var continuation: CheckedContinuation<CaptureResult?, Never>?
-    private var previousApp: NSRunningApplication?
     private var localKeyMonitor: Any?
     private var globalKeyMonitor: Any?
     private var failsafeTask: Task<Void, Never>?
@@ -31,12 +30,8 @@ final class RegionSelectionCoordinator: RegionSelectionViewDelegate {
             regionSelectionDidCancel()
         }
 
-        previousApp = NSWorkspace.shared.frontmostApplication
         PerformanceMonitor.shared.begin("region.overlay")
         displays.refresh()
-
-        // Become active BEFORE covering the desktop so Esc can reach us.
-        NSApp.activate(ignoringOtherApps: true)
 
         do {
             frozen = try await capture.freezeAllDisplays(excludeWindowIDs: capture.ownWindowIDs())
@@ -62,7 +57,6 @@ final class RegionSelectionCoordinator: RegionSelectionViewDelegate {
             installKeyMonitors()
             scheduleFailsafeCancel()
             _ = PerformanceMonitor.shared.end("region.overlay")
-            NSApp.activate(ignoringOtherApps: true)
             let mouse = NSEvent.mouseLocation
             if let preferred = overlays.first(where: { $0.displayInfo.geometry.framePoints.contains(mouse) })
                 ?? overlays.first {
@@ -80,10 +74,25 @@ final class RegionSelectionCoordinator: RegionSelectionViewDelegate {
         }
         // Global monitor: accessory apps often lose key focus under fullscreen overlays.
         // Observe-only — still lets us cancel when Esc would otherwise be swallowed.
-        globalKeyMonitor = NSEvent.addGlobalMonitorForEvents(matching: .keyDown) { [weak self] event in
-            guard let self else { return }
-            if event.keyCode == 53 {
-                Task { @MainActor in self.regionSelectionDidCancel() }
+        globalKeyMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.keyDown, .mouseMoved]) { [weak self] event in
+            MainActor.assumeIsolated {
+                guard let self else { return }
+                if event.type == .mouseMoved {
+                    self.overlays.forEach { $0.selectionView.needsDisplay = true }
+                    return
+                }
+                switch event.keyCode {
+                case 53:
+                    self.regionSelectionDidCancel()
+                case 36, 76:
+                    if let oc = self.overlays.first(where: { $0.window?.isKeyWindow == true }) ?? self.overlays.first {
+                        oc.selectionView.confirmIfPossible()
+                    }
+                case 49:
+                    self.regionSelectionRequestWindowMode()
+                default:
+                    break
+                }
             }
         }
     }
@@ -147,7 +156,8 @@ final class RegionSelectionCoordinator: RegionSelectionViewDelegate {
     }
 
     func regionSelectionDidComplete(displayID: CGDirectDisplayID, pixelRect: CGRect, pointRect: CGRect) {
-        guard continuation != nil else { return }
+        guard let continuation else { return }
+        self.continuation = nil
         let image = frozen[displayID]
         tearDown()
         Task {
@@ -163,11 +173,9 @@ final class RegionSelectionCoordinator: RegionSelectionViewDelegate {
                         kind: .region
                     )
                 }
-                continuation?.resume(returning: result)
-                continuation = nil
+                continuation.resume(returning: result)
             } catch {
-                continuation?.resume(returning: nil)
-                continuation = nil
+                continuation.resume(returning: nil)
             }
         }
     }
@@ -176,17 +184,17 @@ final class RegionSelectionCoordinator: RegionSelectionViewDelegate {
     var overlayCount: Int { overlays.count }
 
     func regionSelectionDidCancel() {
-        guard continuation != nil else { return }
+        guard let continuation else { return }
+        self.continuation = nil
         tearDown()
-        continuation?.resume(returning: nil)
-        continuation = nil
+        continuation.resume(returning: nil)
     }
 
     func regionSelectionRequestWindowMode() {
-        guard continuation != nil else { return }
+        guard let continuation else { return }
+        self.continuation = nil
         tearDown()
-        continuation?.resume(returning: nil)
-        continuation = nil
+        continuation.resume(returning: nil)
         Task {
             _ = await AppServices.shared.captureWindow(destination: .editor)
         }
@@ -196,9 +204,12 @@ final class RegionSelectionCoordinator: RegionSelectionViewDelegate {
         failsafeTask?.cancel()
         failsafeTask = nil
         removeKeyMonitors()
-        overlays.forEach { $0.close() }
+        overlays.forEach {
+            $0.window?.orderOut(nil)
+            $0.close()
+        }
         overlays = []
         frozen = [:]
-        previousApp?.activate(options: [.activateIgnoringOtherApps])
+        AppActivation.resignAfterTransientUI()
     }
 }

@@ -70,6 +70,7 @@
 		DE3931077D9BA74192D20507 /* SettingsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A8A8BC0E361687804D3D734 /* SettingsStore.swift */; };
 		E1DE387F27F25CC9AA026918 /* CaptureResultRouter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E1F1473E2150C7B611D3C71 /* CaptureResultRouter.swift */; };
 		E5F026EFA0DF56B5C71FA79E /* DocsScreenshotRunner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3431CF5455F719D5AFBF9DF9 /* DocsScreenshotRunner.swift */; };
+		E72842DD170AB0DF93B3B19C /* AppActivation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5113BD190355FC98F322C2DB /* AppActivation.swift */; };
 		E82A53D8ED59ACEC5D7523E5 /* ScrollingCaptureCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7330FE7C141E578FC56C08C3 /* ScrollingCaptureCoordinator.swift */; };
 		E8A9D29BBD425649C3C51D47 /* StatusItemTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7548ADF71EAB4D100D7E227F /* StatusItemTests.swift */; };
 		EE8000F05A6B719991199684 /* LastRegionStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A51F343AF15E565E605EE07 /* LastRegionStore.swift */; };
@@ -123,6 +124,7 @@
 		410CC51603DF5088924098E4 /* ScreenForgeIntegrationTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ScreenForgeIntegrationTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		46FBD5DB98BECE90A67BDF47 /* LastRegionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LastRegionTests.swift; sourceTree = "<group>"; };
 		4C26A8832EC3FEE9C1CA1E61 /* HotkeyBinding.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HotkeyBinding.swift; sourceTree = "<group>"; };
+		5113BD190355FC98F322C2DB /* AppActivation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppActivation.swift; sourceTree = "<group>"; };
 		521FEDFF64B5160F77719DEC /* OverlayWindowLifetimeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OverlayWindowLifetimeTests.swift; sourceTree = "<group>"; };
 		53D8A13B712E9EE0DD12C919 /* CanvasObject.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CanvasObject.swift; sourceTree = "<group>"; };
 		58C2062ECD3217218090D0E8 /* CaptureHistoryRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureHistoryRepository.swift; sourceTree = "<group>"; };
@@ -397,6 +399,7 @@
 		76E85F4F6AE1D7532B62FDE9 /* App */ = {
 			isa = PBXGroup;
 			children = (
+				5113BD190355FC98F322C2DB /* AppActivation.swift */,
 				EF5BE4CD7EEB99FD6B12EC57 /* AppLifecycleController.swift */,
 				F420680CB97B1E0A2AC4492E /* AppServices.swift */,
 				3431CF5455F719D5AFBF9DF9 /* DocsScreenshotRunner.swift */,
@@ -726,6 +729,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				E72842DD170AB0DF93B3B19C /* AppActivation.swift in Sources */,
 				146C7D99F7ADD5C5548CC3C3 /* AppLifecycleController.swift in Sources */,
 				3F2FAD2851B042FB9A1CB0F8 /* AppServices.swift in Sources */,
 				B1B1BD6946AA79D902D1B798 /* CanvasObject.swift in Sources */,
@@ -816,14 +820,14 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = ScreenForge/Resources/ScreenForge.entitlements;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 1.0.29;
+				CURRENT_PROJECT_VERSION = 1.0.30;
 				ENABLE_TESTABILITY = YES;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = ScreenForge/Resources/Info.plist;
 				INFOPLIST_KEY_CFBundleIconFile = AppIcon;
 				INFOPLIST_KEY_CFBundleIconName = AppIcon;
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/../Frameworks";
-				MARKETING_VERSION = 1.0.29;
+				MARKETING_VERSION = 1.0.30;
 				OTHER_LDFLAGS = (
 					"-lsqlite3",
 				);
@@ -840,14 +844,14 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = ScreenForge/Resources/ScreenForge.entitlements;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 1.0.29;
+				CURRENT_PROJECT_VERSION = 1.0.30;
 				ENABLE_TESTABILITY = YES;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = ScreenForge/Resources/Info.plist;
 				INFOPLIST_KEY_CFBundleIconFile = AppIcon;
 				INFOPLIST_KEY_CFBundleIconName = AppIcon;
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/../Frameworks";
-				MARKETING_VERSION = 1.0.29;
+				MARKETING_VERSION = 1.0.30;
 				OTHER_LDFLAGS = (
 					"-lsqlite3",
 				);

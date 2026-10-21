@@ -25,7 +25,6 @@ final class WindowSelectionCoordinator {
         if continuation != nil {
             cancel()
         }
-        NSApp.activate(ignoringOtherApps: true)
         do {
             windows = try await capture.provider.availableWindows().filter { win in
                 let bid = win.owningApplication?.bundleIdentifier
@@ -56,13 +55,12 @@ final class WindowSelectionCoordinator {
             window.setFrame(info.geometry.framePoints, display: false)
             window.isOpaque = false
             window.backgroundColor = .clear
-            window.level = NSWindow.Level(Int(CGWindowLevelForKey(.statusWindow)) + 8)
             window.ignoresMouseEvents = false
-            window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .ignoresCycle]
             window.contentView = view
             window.acceptsMouseMovedEvents = true
             window.orderFrontRegardless()
-            window.makeKeyAndOrderFront(nil)
+            // Nonactivating panel: key for Esc/Return, but this does not activate the app or the space.
+            window.makeKey()
             overlayWindows.append(window)
             highlightView = view
         }
@@ -73,13 +71,25 @@ final class WindowSelectionCoordinator {
             }
             return event
         }
-        globalMonitor = NSEvent.addGlobalMonitorForEvents(matching: .keyDown) { [weak self] event in
-            if event.keyCode == 53 {
-                Task { @MainActor in self?.cancel() }
+        globalMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.keyDown, .mouseMoved, .leftMouseDown]) { [weak self] event in
+            MainActor.assumeIsolated {
+                guard let self else { return }
+                switch event.type {
+                case .keyDown where event.keyCode == 53:
+                    self.cancel()
+                case .keyDown where event.keyCode == 36 || event.keyCode == 76:
+                    self.confirm()
+                case .mouseMoved:
+                    self.updateHighlight()
+                case .leftMouseDown:
+                    self.updateHighlight()
+                    self.confirm()
+                default:
+                    break
+                }
             }
         }
         scheduleFailsafeCancel()
-        NSApp.activate(ignoringOtherApps: true)
         updateHighlight()
     }
 
@@ -125,19 +135,22 @@ final class WindowSelectionCoordinator {
     private var currentWindow: SCWindow?
 
     private func confirm() {
-        guard continuation != nil else { return }
-        guard let win = currentWindow else { cancel(); return }
+        guard let continuation else { return }
+        self.continuation = nil
+        guard let win = currentWindow else {
+            tearDown()
+            continuation.resume(returning: nil)
+            return
+        }
         let includeShadow = settings.windowIncludeShadow
         let margin = settings.windowMargin
         tearDown()
         Task {
             do {
                 let result = try await capture.captureSCWindow(win, includeShadow: includeShadow, margin: margin)
-                continuation?.resume(returning: result)
-                continuation = nil
+                continuation.resume(returning: result)
             } catch {
-                continuation?.resume(returning: nil)
-                continuation = nil
+                continuation.resume(returning: nil)
             }
         }
     }
@@ -146,10 +159,10 @@ final class WindowSelectionCoordinator {
     var overlayCount: Int { overlayWindows.count }
 
     func cancel() {
-        guard continuation != nil else { return }
+        guard let continuation else { return }
+        self.continuation = nil
         tearDown()
-        continuation?.resume(returning: nil)
-        continuation = nil
+        continuation.resume(returning: nil)
     }
 
     private func tearDown() {
@@ -159,10 +172,14 @@ final class WindowSelectionCoordinator {
         localMonitor = nil
         if let globalMonitor { NSEvent.removeMonitor(globalMonitor) }
         globalMonitor = nil
-        overlayWindows.forEach { $0.close() }
+        overlayWindows.forEach {
+            $0.orderOut(nil)
+            $0.close()
+        }
         overlayWindows = []
         highlightView = nil
         windows = []
+        AppActivation.resignAfterTransientUI()
     }
 }
 

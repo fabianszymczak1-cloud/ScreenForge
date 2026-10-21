@@ -213,7 +213,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationSupportsSecureRestorableState(_ app: NSApplication) -> Bool {
-        true
+        // Restoring a window into a fullscreen space is another way this process gets pinned there.
+        false
     }
 }
 

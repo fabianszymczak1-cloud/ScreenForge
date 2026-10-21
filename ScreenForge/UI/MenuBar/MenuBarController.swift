@@ -80,11 +80,12 @@ final class MenuBarController: NSObject {
             window.setContentSize(NSSize(width: 720, height: 480))
             window.styleMask = [.titled, .closable, .resizable, .miniaturizable]
             window.isReleasedWhenClosed = false
+            window.isRestorable = false
             window.center()
             historyWindow = window
         }
         historyWindow?.makeKeyAndOrderFront(nil)
-        NSApp.activate(ignoringOtherApps: true)
+        AppActivation.activateForDocumentWindow()
     }
     @objc func openFile() {
         let panel = NSOpenPanel()
@@ -107,10 +108,11 @@ final class MenuBarController: NSObject {
             window.setContentSize(NSSize(width: 780, height: 520))
             window.styleMask = [.titled, .closable, .resizable, .miniaturizable]
             window.isReleasedWhenClosed = false
+            window.isRestorable = false
             window.center()
             settingsWindow = window
         }
-        NSApp.activate(ignoringOtherApps: true)
+        AppActivation.activateForDocumentWindow()
         settingsWindow?.makeKeyAndOrderFront(nil)
     }
     @objc func toggleLogin() {
