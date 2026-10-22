@@ -149,6 +149,12 @@ final class EditorWindowController: NSWindowController, NSWindowDelegate {
         statusLabel.translatesAutoresizingMaskIntoConstraints = false
         root.addSubview(statusLabel)
 
+        let coffee = NSButton(title: String(localized: "Buy Me a Coffee"), target: self, action: #selector(openCoffee))
+        coffee.bezelStyle = .rounded
+        coffee.font = .systemFont(ofSize: 11, weight: .semibold)
+        coffee.translatesAutoresizingMaskIntoConstraints = false
+        root.addSubview(coffee)
+
         NSLayoutConstraint.activate([
             toolbar.leadingAnchor.constraint(equalTo: root.leadingAnchor),
             toolbar.topAnchor.constraint(equalTo: root.topAnchor),
@@ -166,8 +172,11 @@ final class EditorWindowController: NSWindowController, NSWindowDelegate {
             scroll.bottomAnchor.constraint(equalTo: statusLabel.topAnchor, constant: -4),
 
             statusLabel.leadingAnchor.constraint(equalTo: toolbar.trailingAnchor, constant: 8),
-            statusLabel.bottomAnchor.constraint(equalTo: root.bottomAnchor, constant: -4),
-            statusLabel.heightAnchor.constraint(equalToConstant: 18),
+            statusLabel.centerYAnchor.constraint(equalTo: coffee.centerYAnchor),
+            statusLabel.trailingAnchor.constraint(lessThanOrEqualTo: coffee.leadingAnchor, constant: -8),
+
+            coffee.trailingAnchor.constraint(equalTo: scroll.trailingAnchor, constant: -8),
+            coffee.bottomAnchor.constraint(equalTo: root.bottomAnchor, constant: -6),
         ])
 
         window.contentView = root
@@ -268,6 +277,10 @@ final class EditorWindowController: NSWindowController, NSWindowDelegate {
     private func buildProperties() -> NSView {
         let hosting = NSHostingView(rootView: EditorPropertiesView(document: documentModel, controller: self))
         return hosting
+    }
+
+    @objc private func openCoffee() {
+        NSWorkspace.shared.open(SupportLinks.buyMeACoffee)
     }
 
     @objc private func selectTool(_ sender: NSButton) {

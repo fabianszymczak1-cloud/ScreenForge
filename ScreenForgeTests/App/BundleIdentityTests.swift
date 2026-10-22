@@ -6,7 +6,7 @@ import XCTest
 /// toggle or reinstall revived. Changing this string is a breaking change, not a rename.
 final class BundleIdentityTests: XCTestCase {
     func testBundleIdentifierIsTheOneRegisteredInMenuBarAllowList() {
-        XCTAssertEqual(Bundle.main.bundleIdentifier, "app.screenforge.mac")
+        XCTAssertEqual(Bundle.main.bundleIdentifier, "com.itszymczak.screenforge")
     }
 
     func testBurnedIdentitiesStayOnTheTCCResetList() {

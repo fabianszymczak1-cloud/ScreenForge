@@ -85,6 +85,10 @@ enum MenuBarAllowListRepair {
     /// Makes Control Center re-read the allow list. Fixes a binding left stale by an app update;
     /// it cannot fix a bundle ID the list has poisoned — only Reset Control Center does that.
     static func reloadControlCenter() {
+        #if SCREENFORGE_APP_STORE
+        // Sandbox forbids killall, and App Review rejects restarting Control Center.
+        return
+        #endif
         // Order matters: preferences daemon first, then Control Center — see CodexBar #1440.
         for arguments in [["cfprefsd"], ["-9", "ControlCenter"]] {
             let process = Process()

@@ -188,6 +188,9 @@ final class PermissionManager: NSObject, ObservableObject, NSWindowDelegate {
     /// grants afterwards. A short-lived child of this app asks again under the same identity,
     /// which is the only way to notice the grant without quitting first.
     static func grantVisibleToFreshProcess() async -> Bool {
+        #if SCREENFORGE_APP_STORE
+        return false
+        #else
         guard let executable = Bundle.main.executableURL else { return false }
         let process = Process()
         process.executableURL = executable
@@ -204,6 +207,7 @@ final class PermissionManager: NSObject, ObservableObject, NSWindowDelegate {
                 continuation.resume(returning: process.terminationStatus == 0)
             }
         }
+        #endif
     }
 
     static let preflightProbeArgument = "--preflight-screen-recording"
@@ -220,6 +224,10 @@ final class PermissionManager: NSObject, ObservableObject, NSWindowDelegate {
     }
 
     private func resetScreenRecordingTCCEntries() {
+        #if SCREENFORGE_APP_STORE
+        DiagnosticLog.shared.info("screen.permission.tccutil.skipped appStore")
+        return
+        #endif
         var ids = Self.legacyScreenCaptureBundleIDs
         if let current = Bundle.main.bundleIdentifier {
             ids.insert(current, at: 0)

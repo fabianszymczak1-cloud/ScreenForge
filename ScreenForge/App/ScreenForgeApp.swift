@@ -182,6 +182,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         menu.addItem(item(String(localized: "Capture last region"), #selector(MenuBarController.captureLast)))
         menu.addItem(item(String(localized: "Capture with delay"), #selector(MenuBarController.captureDelayed)))
         menu.addItem(.separator())
+        let coffee = item(String(localized: "Buy Me a Coffee"), #selector(MenuBarController.openSupport))
+        coffee.attributedTitle = NSAttributedString(
+            string: String(localized: "Buy Me a Coffee"),
+            attributes: [.font: NSFont.systemFont(ofSize: 13, weight: .semibold)]
+        )
+        menu.addItem(coffee)
+        menu.addItem(.separator())
         menu.addItem(item(String(localized: "Open history"), #selector(MenuBarController.showHistory)))
         let openFile = item(String(localized: "Open image from file…"), #selector(MenuBarController.openFile), key: "o")
         openFile.keyEquivalentModifierMask = [.command]
@@ -195,8 +202,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         menu.addItem(item(String(localized: "Launch at login"), #selector(MenuBarController.toggleLogin)))
         menu.addItem(item(String(localized: "Check permissions"), #selector(MenuBarController.checkPermissions)))
         menu.addItem(item(String(localized: "About"), #selector(MenuBarController.showAbout)))
-        menu.addItem(item(String(localized: "Check for Updates…"), #selector(MenuBarController.checkForUpdates)))
-        menu.addItem(item(String(localized: "Buy Me a Coffee"), #selector(MenuBarController.openSupport)))
         menu.addItem(.separator())
         let quit = item(String(localized: "Quit"), #selector(MenuBarController.quit), key: "q")
         quit.keyEquivalentModifierMask = [.command]

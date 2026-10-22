@@ -14,6 +14,7 @@
 		1129655CA127C34A6656BB4C /* DelayedCaptureCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95A7FC35FB90D9A133241E8B /* DelayedCaptureCoordinator.swift */; };
 		146C7D99F7ADD5C5548CC3C3 /* AppLifecycleController.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF5BE4CD7EEB99FD6B12EC57 /* AppLifecycleController.swift */; };
 		1D1FF2663DBEAB5E4709E26D /* UndoCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = BD88CFEAB40C22DAB8C7F790 /* UndoCoordinator.swift */; };
+		1E24871E25400754E59108FC /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = CF7B41F8DD2A1EBE1F54067E /* PrivacyInfo.xcprivacy */; };
 		1FAE6BDD66E4BB136BD46C11 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 2470D98460ABDB2F318116B3 /* Assets.xcassets */; };
 		214E1BACF3BF8080F626DAE4 /* ScreenForgeApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01769C4D465E8B5852796D1D /* ScreenForgeApp.swift */; };
 		248A107F811BD4BF6A6DD8B3 /* LaunchAtLoginService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81D6525CF05A4C73581B0C23 /* LaunchAtLoginService.swift */; };
@@ -26,7 +27,6 @@
 		4151734882869837D31F9421 /* MenuBarSlotProbe.swift in Sources */ = {isa = PBXBuildFile; fileRef = D95D7D9E6BDABAF245DF2200 /* MenuBarSlotProbe.swift */; };
 		45B16CBF8B2B24E4EA219B0B /* DisplayGeometryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3061EF611B89D6C561F7CED4 /* DisplayGeometryTests.swift */; };
 		4A78A2545DF633094332ED42 /* HistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 366BC6EF777FA4C4AAB042F4 /* HistoryView.swift */; };
-		4B8C625A248D34CCB48736AD /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = 599F20A76291A4E31169697A /* Sparkle */; };
 		4CE9D88B561C5F7D520DE23C /* PerformanceMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = CD9C5E03ED074450CE161B1B /* PerformanceMonitor.swift */; };
 		4E186773600F9C80DBE110CB /* PresetStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1A577739E6CC65D24E77E10 /* PresetStore.swift */; };
 		52C7902C0D888C227630F9BB /* SupportLinks.swift in Sources */ = {isa = PBXBuildFile; fileRef = 693E708060B1B5CBBDA49D05 /* SupportLinks.swift */; };
@@ -163,6 +163,7 @@
 		C5F0130784489800500B3B20 /* CanvasView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CanvasView.swift; sourceTree = "<group>"; };
 		C89A6924C45FDC2A3E7C4FB8 /* EditorDocumentTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorDocumentTests.swift; sourceTree = "<group>"; };
 		CD9C5E03ED074450CE161B1B /* PerformanceMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PerformanceMonitor.swift; sourceTree = "<group>"; };
+		CF7B41F8DD2A1EBE1F54067E /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		D79F11F4354012A2F67AD6FA /* MenuBarExtraContent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarExtraContent.swift; sourceTree = "<group>"; };
 		D95D7D9E6BDABAF245DF2200 /* MenuBarSlotProbe.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarSlotProbe.swift; sourceTree = "<group>"; };
 		DA4993030959AE74C4C1CDFE /* ScreenCaptureKitProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenCaptureKitProvider.swift; sourceTree = "<group>"; };
@@ -181,17 +182,6 @@
 		F852D0D955719F29ED213D75 /* ThumbnailService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThumbnailService.swift; sourceTree = "<group>"; };
 		FB97989BA09B55AF655046D2 /* OCRService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OCRService.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
-
-/* Begin PBXFrameworksBuildPhase section */
-		DBFC0FCB0F0B505D4FBC9664 /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				4B8C625A248D34CCB48736AD /* Sparkle in Frameworks */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-/* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
 		02AC40111BA2955C50C57D60 /* ScreenForge */ = {
@@ -235,6 +225,7 @@
 				7253A541E9FA0D28CBA9457C /* AppIcon.icns */,
 				2470D98460ABDB2F318116B3 /* Assets.xcassets */,
 				713244C86DD708CD82188503 /* Info.plist */,
+				CF7B41F8DD2A1EBE1F54067E /* PrivacyInfo.xcprivacy */,
 				5A755F550B54558D46F5EE94 /* ScreenForge.entitlements */,
 				363E0BA9F9EE31618A66A0EE /* Localizable.strings */,
 			);
@@ -619,7 +610,6 @@
 			buildPhases = (
 				CE613866B09094FEA077CAAC /* Sources */,
 				D581A78E940B9916007A2564 /* Resources */,
-				DBFC0FCB0F0B505D4FBC9664 /* Frameworks */,
 			);
 			buildRules = (
 			);
@@ -627,7 +617,6 @@
 			);
 			name = ScreenForge;
 			packageProductDependencies = (
-				599F20A76291A4E31169697A /* Sparkle */,
 			);
 			productName = ScreenForge;
 			productReference = 21747B643A1853565E8FBB7B /* ScreenForge.app */;
@@ -643,16 +632,16 @@
 				LastUpgradeCheck = 1430;
 				TargetAttributes = {
 					4D34222011405E33A65DA591 = {
-						DevelopmentTeam = "";
-						ProvisioningStyle = Manual;
+						DevelopmentTeam = L79YFD5F24;
+						ProvisioningStyle = Automatic;
 					};
 					F0F7F9377E65D894A4A25DB8 = {
-						DevelopmentTeam = "";
-						ProvisioningStyle = Manual;
+						DevelopmentTeam = L79YFD5F24;
+						ProvisioningStyle = Automatic;
 					};
 					FA838DA6CAB64DA6313863A8 = {
-						DevelopmentTeam = "";
-						ProvisioningStyle = Manual;
+						DevelopmentTeam = L79YFD5F24;
+						ProvisioningStyle = Automatic;
 					};
 				};
 			};
@@ -666,9 +655,6 @@
 			);
 			mainGroup = 60A9303A862A9FEE9F6205CB;
 			minimizedProjectReferenceProxies = 1;
-			packageReferences = (
-				88BF78D8A152CD07854D8ADD /* XCRemoteSwiftPackageReference "Sparkle" */,
-			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 9D8C86189255D450E9C4FE4F /* Products */;
 			projectDirPath = "";
@@ -689,6 +675,7 @@
 				668AD84E4544C848CE7F54A7 /* AppIcon.icns in Resources */,
 				1FAE6BDD66E4BB136BD46C11 /* Assets.xcassets in Resources */,
 				8B6D05B098DC683888B92C37 /* Localizable.strings in Resources */,
+				1E24871E25400754E59108FC /* PrivacyInfo.xcprivacy in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -820,20 +807,21 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = ScreenForge/Resources/ScreenForge.entitlements;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 1.0.30;
+				CURRENT_PROJECT_VERSION = 1.0.31;
 				ENABLE_TESTABILITY = YES;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = ScreenForge/Resources/Info.plist;
 				INFOPLIST_KEY_CFBundleIconFile = AppIcon;
 				INFOPLIST_KEY_CFBundleIconName = AppIcon;
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/../Frameworks";
-				MARKETING_VERSION = 1.0.30;
+				MARKETING_VERSION = 1.0.31;
 				OTHER_LDFLAGS = (
 					"-lsqlite3",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = app.screenforge.mac;
+				PRODUCT_BUNDLE_IDENTIFIER = com.itszymczak.screenforge;
 				PRODUCT_NAME = ScreenForge;
 				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = SCREENFORGE_APP_STORE;
 				SWIFT_STRICT_CONCURRENCY = minimal;
 			};
 			name = Release;
@@ -844,20 +832,21 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = ScreenForge/Resources/ScreenForge.entitlements;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 1.0.30;
+				CURRENT_PROJECT_VERSION = 1.0.31;
 				ENABLE_TESTABILITY = YES;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = ScreenForge/Resources/Info.plist;
 				INFOPLIST_KEY_CFBundleIconFile = AppIcon;
 				INFOPLIST_KEY_CFBundleIconName = AppIcon;
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/../Frameworks";
-				MARKETING_VERSION = 1.0.30;
+				MARKETING_VERSION = 1.0.31;
 				OTHER_LDFLAGS = (
 					"-lsqlite3",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = app.screenforge.mac;
+				PRODUCT_BUNDLE_IDENTIFIER = com.itszymczak.screenforge;
 				PRODUCT_NAME = ScreenForge;
 				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = SCREENFORGE_APP_STORE;
 				SWIFT_STRICT_CONCURRENCY = minimal;
 			};
 			name = Debug;
@@ -912,13 +901,12 @@
 				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
-				CODE_SIGN_IDENTITY = "-";
-				CODE_SIGN_STYLE = Manual;
+				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
 				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
-				DEVELOPMENT_TEAM = "";
-				ENABLE_HARDENED_RUNTIME = NO;
+				DEVELOPMENT_TEAM = L79YFD5F24;
+				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
@@ -973,13 +961,12 @@
 				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
-				CODE_SIGN_IDENTITY = "-";
-				CODE_SIGN_STYLE = Manual;
+				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
 				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = dwarf;
-				DEVELOPMENT_TEAM = "";
-				ENABLE_HARDENED_RUNTIME = NO;
+				DEVELOPMENT_TEAM = L79YFD5F24;
+				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
@@ -1099,25 +1086,6 @@
 			defaultConfigurationName = Debug;
 		};
 /* End XCConfigurationList section */
-
-/* Begin XCRemoteSwiftPackageReference section */
-		88BF78D8A152CD07854D8ADD /* XCRemoteSwiftPackageReference "Sparkle" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/sparkle-project/Sparkle";
-			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 2.6.4;
-			};
-		};
-/* End XCRemoteSwiftPackageReference section */
-
-/* Begin XCSwiftPackageProductDependency section */
-		599F20A76291A4E31169697A /* Sparkle */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 88BF78D8A152CD07854D8ADD /* XCRemoteSwiftPackageReference "Sparkle" */;
-			productName = Sparkle;
-		};
-/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = F4A0A7DAB2AB19B6F81E5692 /* Project object */;
 }

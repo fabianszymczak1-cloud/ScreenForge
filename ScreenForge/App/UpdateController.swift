@@ -1,27 +1,15 @@
 import AppKit
-import Sparkle
 
+/// App Store builds update through the Mac App Store. Sparkle is not allowed there.
 @MainActor
 final class UpdateController {
     static let shared = UpdateController()
 
-    private var updaterController: SPUStandardUpdaterController?
-
     private init() {}
 
-    /// Call after the menu-bar status item is installed (PasteRush order).
     func start() {
-        guard updaterController == nil else { return }
-        updaterController = SPUStandardUpdaterController(
-            startingUpdater: true,
-            updaterDelegate: nil,
-            userDriverDelegate: nil
-        )
-        DiagnosticLog.shared.info("sparkle.started")
+        DiagnosticLog.shared.info("updates.appStore")
     }
 
-    func checkForUpdates() {
-        start()
-        updaterController?.checkForUpdates(nil)
-    }
+    func checkForUpdates() {}
 }
