@@ -99,6 +99,7 @@ If ScreenForge helps you: [Buy Me a Coffee](${BMC})
 
 ### Notes
 - macOS 26+
+- After a capture, the editor window is focused immediately so ⌘↩ copies without clicking the window first.
 - Capture overlays no longer join the fullscreen or Split View space as the app's main window. That affinity was what made Mission Control and Dock clicks bounce back to the fullscreen app after ScreenForge had been running; three-finger swipes kept working because they bypass it.
 - Rectangles and ellipses can be rotated from the handle above the selection; hold Shift to snap to 15°.
 - Fixed a crash when picking a window to capture: the selection overlays were released twice, so the app died in the next autorelease pool drain.

@@ -6,9 +6,16 @@ import AppKit
 /// clicking another desktop in Mission Control or the Dock returns to the fullscreen app,
 /// while a three-finger swipe still works.
 enum AppActivation {
-    /// Foreground a real document window (editor, settings, history) without forcing a space change.
+    /// Foreground a real document window (settings, history) without forcing a space change.
     static func activateForDocumentWindow() {
         NSApp.activate()
+    }
+
+    /// Editor after a capture. The window has to be key or ⌘↩ never arrives.
+    /// This is a normal document window, not a capture overlay, so it does not join the fullscreen space.
+    static func focusEditor(_ window: NSWindow?) {
+        NSApp.activate(ignoringOtherApps: true)
+        window?.makeKeyAndOrderFront(nil)
     }
 
     /// Leave the foreground after a capture overlay so this process is no longer the space owner.

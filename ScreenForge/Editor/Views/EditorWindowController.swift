@@ -41,6 +41,8 @@ final class EditorWindowManager {
     func open(document: EditorDocument) {
         if let existing = controllers[document.id] {
             existing.showWindow(nil)
+            AppActivation.focusEditor(existing.window)
+            existing.window?.makeFirstResponder(existing.canvasView)
             return
         }
         let wc = EditorWindowController(document: document)
@@ -50,7 +52,8 @@ final class EditorWindowManager {
         }
         controllers[document.id] = wc
         wc.showWindow(nil)
-        AppActivation.activateForDocumentWindow()
+        AppActivation.focusEditor(wc.window)
+        wc.window?.makeFirstResponder(wc.canvasView)
         if AppServices.shared.settings.editorFitOnOpen {
             wc.canvasView.fitToWindow()
         }
@@ -227,6 +230,8 @@ final class EditorWindowController: NSWindowController, NSWindowDelegate {
             stack.addArrangedSubview(btn)
         }
         let copyBtn = NSButton(title: "⌘↩", target: self, action: #selector(copyAndClose))
+        copyBtn.keyEquivalent = "\r"
+        copyBtn.keyEquivalentModifierMask = [.command]
         copyBtn.bezelStyle = .rounded
         copyBtn.toolTip = String(localized: "Copy and close (⌘↩)")
         copyBtn.setAccessibilityLabel(String(localized: "Copy and close"))
