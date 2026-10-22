@@ -16,11 +16,24 @@ echo "==> xcodegen"
 xcodegen generate >/dev/null
 
 echo "==> xcodebuild test"
-if xcodebuild test \
-  -scheme ScreenForge \
-  -configuration Debug \
-  -derivedDataPath "$DERIVED" \
-  -quiet; then
+# The test host is this menu-bar app. If WindowServer never hands XCTest a connection,
+# xcodebuild waits forever — cap it so a wedged space cannot block a release overnight.
+if python3 - "$DERIVED" <<'PY'
+import os, signal, subprocess, sys
+derived = sys.argv[1]
+proc = subprocess.Popen(
+    ["xcodebuild", "test", "-scheme", "ScreenForge", "-configuration", "Debug",
+     "-derivedDataPath", derived, "-quiet"],
+    start_new_session=True,
+)
+try:
+    sys.exit(proc.wait(timeout=240))
+except subprocess.TimeoutExpired:
+    os.killpg(proc.pid, signal.SIGKILL)
+    print("XCTest: TIMEOUT after 240s", flush=True)
+    sys.exit(1)
+PY
+then
   echo "XCTest: PASSED"
 else
   echo "XCTest: FAILED"
