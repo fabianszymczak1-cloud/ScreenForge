@@ -28,7 +28,7 @@ struct MenuBarExtraContent: View {
             Button(String(localized: "Check permissions")) { menuBar.checkPermissions() }
             Button(String(localized: "About")) { menuBar.showAbout() }
             Button(String(localized: "Check for Updates…")) { menuBar.checkForUpdates() }
-            Button(String(localized: "Buy Me a Coffee")) { menuBar.openSupport() }
+            Button(String(localized: "Support ScreenForge")) { menuBar.openSupport() }
             Divider()
             Button(String(localized: "Quit")) { menuBar.quit() }
                 .keyboardShortcut("q", modifiers: .command)

@@ -71,6 +71,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         lifecycle = AppLifecycleController(services: services)
         lifecycle?.start()
+        TipStore.shared.start()
 
         if ProcessInfo.processInfo.arguments.contains("--smoke-test") {
             Task { @MainActor in
@@ -182,9 +183,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         menu.addItem(item(String(localized: "Capture last region"), #selector(MenuBarController.captureLast)))
         menu.addItem(item(String(localized: "Capture with delay"), #selector(MenuBarController.captureDelayed)))
         menu.addItem(.separator())
-        let coffee = item(String(localized: "Buy Me a Coffee"), #selector(MenuBarController.openSupport))
+        let coffee = item(String(localized: "Support ScreenForge"), #selector(MenuBarController.openSupport))
         coffee.attributedTitle = NSAttributedString(
-            string: String(localized: "Buy Me a Coffee"),
+            string: String(localized: "Support ScreenForge"),
             attributes: [.font: NSFont.systemFont(ofSize: 13, weight: .semibold)]
         )
         menu.addItem(coffee)

@@ -298,7 +298,7 @@ struct PrivacySettingsView: View {
             Text(String(localized: "ScreenForge does not send data to the internet. No account, telemetry, or cloud."))
             Toggle(String(localized: "Remember app and window name"), isOn: $settings.storeSourceMetadata)
             Toggle(String(localized: "Strip metadata on export"), isOn: $settings.stripExportMetadata)
-            Link(String(localized: "Buy Me a Coffee"), destination: SupportLinks.buyMeACoffee)
+            Button(String(localized: "Support ScreenForge")) { TipPresenter.show() }
         }
     }
 }
@@ -331,7 +331,7 @@ struct AboutSettingsView: View {
             Text(Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "1.0.0")
                 .foregroundStyle(.secondary)
             Text(String(localized: "A native screenshot tool for macOS. Fully local."))
-            Link(String(localized: "Buy Me a Coffee"), destination: SupportLinks.buyMeACoffee)
+            Button(String(localized: "Support ScreenForge")) { TipPresenter.show() }
             Link(String(localized: "GitHub"), destination: SupportLinks.githubRepo)
             Spacer()
         }

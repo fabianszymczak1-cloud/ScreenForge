@@ -4,7 +4,7 @@ ScreenForge is a free menu-bar app that takes screenshots on your Mac and lets y
 
 ## Polski
 
-ScreenForge to darmowa aplikacja do zrzutów ekranu na Macu. Zrzuty, projekty i historia zostają tylko na tym komputerze. Aplikacja nie wysyła obrazów, nie wymaga konta i nie zawiera analityki. Uprawnienie do nagrywania ekranu służy wyłącznie do zrobienia zrzutu. Buy Me a Coffee otwiera się w przeglądarce i jest opcjonalne.
+ScreenForge to darmowa aplikacja do zrzutów ekranu na Macu. Zrzuty, projekty i historia zostają tylko na tym komputerze. Aplikacja nie wysyła obrazów, nie wymaga konta i nie zawiera analityki. Uprawnienie do nagrywania ekranu służy wyłącznie do zrobienia zrzutu. Opcjonalny napiwek jest zakupem w App Store i niczego nie odblokowuje. Płatność obsługuje Apple.
 
 ## What stays on your Mac
 
@@ -16,7 +16,7 @@ macOS asks for Screen Recording permission so ScreenForge can capture your scree
 
 ## Optional support
 
-Buy Me a Coffee opens in your browser. ScreenForge does not receive your payment details. That link is optional.
+An optional tip is an In-App Purchase. It does not unlock any feature. Apple processes the payment. ScreenForge does not receive card details.
 
 ## Contact
 

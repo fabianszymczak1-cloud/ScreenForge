@@ -51,18 +51,11 @@ struct OnboardingView: View {
                                 .font(.callout)
                         }
                         VStack(alignment: .leading, spacing: 8) {
-                            Text(String(localized: "If ScreenForge helps you, you can buy me a coffee."))
+                            Text(String(localized: "If ScreenForge helps you, you can leave an optional tip."))
                                 .font(.body)
                                 .foregroundStyle(.primary)
-                            Link(destination: SupportLinks.buyMeACoffee) {
-                                Text(String(localized: "Buy Me a Coffee"))
-                                    .font(.body.weight(.semibold))
-                                    .frame(maxWidth: .infinity)
-                                    .padding(.vertical, 10)
-                                    .padding(.horizontal, 14)
-                                    .background(Color.accentColor.opacity(0.15))
-                                    .foregroundStyle(Color.accentColor)
-                                    .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                            Button(String(localized: "Support ScreenForge")) {
+                                TipPresenter.show()
                             }
                         }
                         .padding(.top, 4)

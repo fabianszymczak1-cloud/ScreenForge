@@ -149,7 +149,7 @@ final class EditorWindowController: NSWindowController, NSWindowDelegate {
         statusLabel.translatesAutoresizingMaskIntoConstraints = false
         root.addSubview(statusLabel)
 
-        let coffee = NSButton(title: String(localized: "Buy Me a Coffee"), target: self, action: #selector(openCoffee))
+        let coffee = NSButton(title: String(localized: "Support ScreenForge"), target: self, action: #selector(openCoffee))
         coffee.bezelStyle = .rounded
         coffee.font = .systemFont(ofSize: 11, weight: .semibold)
         coffee.translatesAutoresizingMaskIntoConstraints = false
@@ -280,7 +280,7 @@ final class EditorWindowController: NSWindowController, NSWindowDelegate {
     }
 
     @objc private func openCoffee() {
-        NSWorkspace.shared.open(SupportLinks.buyMeACoffee)
+        TipPresenter.show()
     }
 
     @objc private func selectTool(_ sender: NSButton) {

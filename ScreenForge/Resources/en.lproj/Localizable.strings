@@ -15,6 +15,11 @@
 "Back" = "Back";
 "Blur" = "Blur";
 "Buy Me a Coffee" = "Buy Me a Coffee";
+"Support ScreenForge" = "Support ScreenForge";
+"The app stays free. A tip is optional and does not unlock any feature. Payment is handled by Apple." = "The app stays free. A tip is optional and does not unlock any feature. Payment is handled by Apple.";
+"Tips are unavailable right now." = "Tips are unavailable right now.";
+"Thank you. This tip does not unlock anything." = "Thank you. This tip does not unlock anything.";
+"If ScreenForge helps you, you can leave an optional tip." = "If ScreenForge helps you, you can leave an optional tip.";
 "Cancel" = "Cancel";
 "Cancelled" = "Cancelled";
 "Capture" = "Capture";
@@ -97,7 +102,7 @@
 "Highlight" = "Highlight";
 "History" = "History";
 "If macOS requires restarting the app after granting permission, use the button below." = "If macOS requires restarting the app after granting permission, use the button below.";
-"If ScreenForge helps you, you can buy me a coffee." = "If ScreenForge helps you, you can buy me a coffee.";
+"If ScreenForge helps you, you can buy me a coffee." = "If ScreenForge helps you, you can leave an optional tip.";
 "Include cursor" = "Include cursor";
 "Insert image" = "Insert image";
 "Insert objects at canvas center" = "Insert objects at canvas center";

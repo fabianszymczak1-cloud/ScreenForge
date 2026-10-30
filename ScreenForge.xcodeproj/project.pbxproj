@@ -17,6 +17,7 @@
 		1E24871E25400754E59108FC /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = CF7B41F8DD2A1EBE1F54067E /* PrivacyInfo.xcprivacy */; };
 		1FAE6BDD66E4BB136BD46C11 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 2470D98460ABDB2F318116B3 /* Assets.xcassets */; };
 		214E1BACF3BF8080F626DAE4 /* ScreenForgeApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01769C4D465E8B5852796D1D /* ScreenForgeApp.swift */; };
+		2212E432339F838F61087562 /* TipStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 306810BA913CBADF4738E5A4 /* TipStore.swift */; };
 		248A107F811BD4BF6A6DD8B3 /* LaunchAtLoginService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81D6525CF05A4C73581B0C23 /* LaunchAtLoginService.swift */; };
 		24E40EA2233251BC2D912B27 /* ProjectSerializationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2647025B2B095E17B3A171B6 /* ProjectSerializationTests.swift */; };
 		2C0533FCDBA4B45DB27D9F3F /* FilenameTemplateService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2074D9E164CA752801F167C6 /* FilenameTemplateService.swift */; };
@@ -38,6 +39,7 @@
 		668AD84E4544C848CE7F54A7 /* AppIcon.icns in Resources */ = {isa = PBXBuildFile; fileRef = 7253A541E9FA0D28CBA9457C /* AppIcon.icns */; };
 		6792934D746FCC7881D572A9 /* CanvasView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5F0130784489800500B3B20 /* CanvasView.swift */; };
 		6C59B63E1AA55972D61AA711 /* CoordinateConverter.swift in Sources */ = {isa = PBXBuildFile; fileRef = A553937510F2D9D59F1213E3 /* CoordinateConverter.swift */; };
+		6E767DEA0547AEBE207D98C1 /* TipSupportWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA9A8769CAED523FF2EA9527 /* TipSupportWindow.swift */; };
 		6EDF89A6657675A3EDC7C263 /* MenuBarAllowListRepair.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A5D27C7514A12228446C1B2 /* MenuBarAllowListRepair.swift */; };
 		73A5C003E358122ECA436E53 /* CoordinateConverterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC2ABC9CF0538E2E3DBB2C26 /* CoordinateConverterTests.swift */; };
 		7768D8E2C45A70D19F2DC50D /* PermissionsGateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAE2D90AF464F4E0C4552E09 /* PermissionsGateView.swift */; };
@@ -116,6 +118,7 @@
 		26C3903F17E851B5B8F7AB51 /* BasicIntegrationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BasicIntegrationTests.swift; sourceTree = "<group>"; };
 		2FE8E5D3F3BEAAE5B58633AC /* RenderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RenderTests.swift; sourceTree = "<group>"; };
 		3061EF611B89D6C561F7CED4 /* DisplayGeometryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DisplayGeometryTests.swift; sourceTree = "<group>"; };
+		306810BA913CBADF4738E5A4 /* TipStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TipStore.swift; sourceTree = "<group>"; };
 		3431CF5455F719D5AFBF9DF9 /* DocsScreenshotRunner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocsScreenshotRunner.swift; sourceTree = "<group>"; };
 		34D50E58C373433DE0C92498 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
 		366BC6EF777FA4C4AAB042F4 /* HistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryView.swift; sourceTree = "<group>"; };
@@ -154,6 +157,7 @@
 		9A8A8BC0E361687804D3D734 /* SettingsStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsStore.swift; sourceTree = "<group>"; };
 		A1CE09733CB31AAEC1F95C06 /* DisplayTopologyService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DisplayTopologyService.swift; sourceTree = "<group>"; };
 		A553937510F2D9D59F1213E3 /* CoordinateConverter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoordinateConverter.swift; sourceTree = "<group>"; };
+		AA9A8769CAED523FF2EA9527 /* TipSupportWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TipSupportWindow.swift; sourceTree = "<group>"; };
 		AC2ABC9CF0538E2E3DBB2C26 /* CoordinateConverterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoordinateConverterTests.swift; sourceTree = "<group>"; };
 		B275A6A270C320EF8275F2DD /* GlobalHotkeyManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlobalHotkeyManager.swift; sourceTree = "<group>"; };
 		B601FA86758864719173F34C /* EditorWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorWindowController.swift; sourceTree = "<group>"; };
@@ -313,6 +317,8 @@
 			isa = PBXGroup;
 			children = (
 				693E708060B1B5CBBDA49D05 /* SupportLinks.swift */,
+				306810BA913CBADF4738E5A4 /* TipStore.swift */,
+				AA9A8769CAED523FF2EA9527 /* TipSupportWindow.swift */,
 			);
 			path = Support;
 			sourceTree = "<group>";
@@ -767,6 +773,8 @@
 				62AA065151B9C54F6B7ED1F3 /* SmokeTestRunner.swift in Sources */,
 				52C7902C0D888C227630F9BB /* SupportLinks.swift in Sources */,
 				D3D6612E4566C4B06C1DF92E /* ThumbnailService.swift in Sources */,
+				2212E432339F838F61087562 /* TipStore.swift in Sources */,
+				6E767DEA0547AEBE207D98C1 /* TipSupportWindow.swift in Sources */,
 				1D1FF2663DBEAB5E4709E26D /* UndoCoordinator.swift in Sources */,
 				C3C18414FFDAB5183A76930B /* UpdateController.swift in Sources */,
 				F9B6F7C13D8EE48623FAF754 /* WindowSelectionCoordinator.swift in Sources */,
@@ -807,14 +815,14 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = ScreenForge/Resources/ScreenForge.entitlements;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 1.0.31;
+				CURRENT_PROJECT_VERSION = 1.0.32;
 				ENABLE_TESTABILITY = YES;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = ScreenForge/Resources/Info.plist;
 				INFOPLIST_KEY_CFBundleIconFile = AppIcon;
 				INFOPLIST_KEY_CFBundleIconName = AppIcon;
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/../Frameworks";
-				MARKETING_VERSION = 1.0.31;
+				MARKETING_VERSION = 1.0.32;
 				OTHER_LDFLAGS = (
 					"-lsqlite3",
 				);
@@ -832,14 +840,14 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = ScreenForge/Resources/ScreenForge.entitlements;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 1.0.31;
+				CURRENT_PROJECT_VERSION = 1.0.32;
 				ENABLE_TESTABILITY = YES;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = ScreenForge/Resources/Info.plist;
 				INFOPLIST_KEY_CFBundleIconFile = AppIcon;
 				INFOPLIST_KEY_CFBundleIconName = AppIcon;
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/../Frameworks";
-				MARKETING_VERSION = 1.0.31;
+				MARKETING_VERSION = 1.0.32;
 				OTHER_LDFLAGS = (
 					"-lsqlite3",
 				);

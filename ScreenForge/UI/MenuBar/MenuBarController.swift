@@ -131,13 +131,13 @@ final class MenuBarController: NSObject {
         alert.messageText = "ScreenForge"
         let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "1.0.0"
         alert.informativeText = String(localized: "Version \(version). Local screenshots for macOS. No telemetry, no cloud.")
-        alert.addButton(withTitle: String(localized: "Buy Me a Coffee"))
+        alert.addButton(withTitle: String(localized: "Support ScreenForge"))
         alert.addButton(withTitle: String(localized: "Close"))
         if alert.runModal() == .alertFirstButtonReturn {
-            NSWorkspace.shared.open(SupportLinks.buyMeACoffee)
+            TipPresenter.show()
         }
     }
     @objc func checkForUpdates() { UpdateController.shared.checkForUpdates() }
-    @objc func openSupport() { NSWorkspace.shared.open(SupportLinks.buyMeACoffee) }
+    @objc func openSupport() { TipPresenter.show() }
     @objc func quit() { NSApp.terminate(nil) }
 }
