@@ -187,6 +187,8 @@
 "Remember app and window name" = "Zapisuj nazwę aplikacji i okna";
 "Request Accessibility" = "Poproś o Dostępność";
 "Restore default shortcuts" = "Przywróć domyślne skróty";
+"Type shortcut…" = "Wciśnij skrót…";
+"Click a shortcut, then press the new combination with ⌃, ⌥ or ⌘. Esc cancels." = "Kliknij skrót, a potem wciśnij nową kombinację z ⌃, ⌥ lub ⌘. Esc anuluje.";
 "Restore defaults" = "Przywróć domyślne";
 "Save" = "Zapisz";
 "Save and notify" = "Zapisz i powiadom";

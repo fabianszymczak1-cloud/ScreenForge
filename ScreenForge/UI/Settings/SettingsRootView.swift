@@ -1,4 +1,5 @@
 import SwiftUI
+import AppKit
 import Carbon.HIToolbox
 
 enum SettingsSection: String, CaseIterable, Identifiable {
@@ -109,9 +110,14 @@ struct HotkeysSettingsView: View {
                 ForEach(HotkeyAction.allCases) { action in
                     HotkeyRow(action: action)
                 }
+            } footer: {
+                Text(String(localized: "Click a shortcut, then press the new combination with ⌃, ⌥ or ⌘. Esc cancels."))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
             Section {
                 Button(String(localized: "Restore default shortcuts")) {
+                    HotkeyRecorder.shared.stop()
                     settings.hotkeyBindings = HotkeyBinding.defaults
                     AppServices.shared.hotkeys.registerAll()
                 }
@@ -119,25 +125,118 @@ struct HotkeysSettingsView: View {
         }
         .listStyle(.inset(alternatesRowBackgrounds: true))
         .frame(minHeight: 360)
+        .onDisappear { HotkeyRecorder.shared.stop() }
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didResignActiveNotification)) { _ in
+            HotkeyRecorder.shared.stop()
+        }
+    }
+}
+
+/// Captures the next key press for a shortcut row.
+///
+/// A local event monitor sees the key before SwiftUI, so recording does not depend on which view
+/// holds keyboard focus. The global hotkeys are unregistered meanwhile, otherwise pressing an
+/// existing combination would fire a capture instead of being recorded.
+@MainActor
+final class HotkeyRecorder: ObservableObject {
+    static let shared = HotkeyRecorder()
+
+    @Published private(set) var recordingAction: HotkeyAction?
+    private var monitor: Any?
+
+    func toggle(_ action: HotkeyAction) {
+        if recordingAction == action { stop() } else { start(action) }
+    }
+
+    func start(_ action: HotkeyAction) {
+        stop()
+        recordingAction = action
+        AppServices.shared.hotkeys.unregisterAll()
+        monitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
+            guard let self, self.recordingAction != nil else { return event }
+            self.record(event)
+            return nil
+        }
+    }
+
+    func stop() {
+        if let monitor {
+            NSEvent.removeMonitor(monitor)
+            self.monitor = nil
+        }
+        guard recordingAction != nil else { return }
+        recordingAction = nil
+        AppServices.shared.hotkeys.registerAll()
+    }
+
+    private func record(_ event: NSEvent) {
+        guard let action = recordingAction else { return }
+        let flags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
+        let keyCode = UInt32(event.keyCode)
+        let modifiers = Self.carbonModifiers(flags)
+
+        if keyCode == UInt32(kVK_Escape) && modifiers == 0 {
+            stop()
+            return
+        }
+        let commandish = modifiers & UInt32(controlKey | optionKey | cmdKey) != 0
+        guard commandish || HotkeyBinding.functionKeyCodes.contains(keyCode) else {
+            NSSound.beep()
+            return
+        }
+
+        let binding = HotkeyBinding(keyCode: keyCode, modifiers: modifiers, isEnabled: true)
+        let settings = AppServices.shared.settings
+        let conflicts = AppServices.shared.hotkeys.conflicts(for: binding, excluding: action)
+        settings.hotkeyBindings[action.rawValue] = binding
+        stop()
+        if !conflicts.isEmpty {
+            AppServices.shared.notifications.show(
+                title: String(localized: "Shortcut conflict"),
+                body: conflicts.map(\.title).joined(separator: ", ")
+            )
+        }
+    }
+
+    static func carbonModifiers(_ flags: NSEvent.ModifierFlags) -> UInt32 {
+        var mods: UInt32 = 0
+        if flags.contains(.control) { mods |= UInt32(controlKey) }
+        if flags.contains(.option) { mods |= UInt32(optionKey) }
+        if flags.contains(.shift) { mods |= UInt32(shiftKey) }
+        if flags.contains(.command) { mods |= UInt32(cmdKey) }
+        return mods
     }
 }
 
 struct HotkeyRow: View {
     let action: HotkeyAction
     @EnvironmentObject var settings: SettingsStore
-    @State private var recording = false
+    @ObservedObject private var recorder = HotkeyRecorder.shared
+
+    private var isRecording: Bool { recorder.recordingAction == action }
 
     var body: some View {
         HStack {
             Text(action.title)
             Spacer()
-            let binding = settings.hotkeyBindings[action.rawValue]
-            Text(binding?.displayString ?? "—")
-                .font(.body.monospaced())
-                .padding(6)
-                .background(recording ? Color.accentColor.opacity(0.2) : Color.secondary.opacity(0.1))
-                .cornerRadius(6)
-                .onTapGesture { recording = true }
+            Button {
+                recorder.toggle(action)
+            } label: {
+                Text(isRecording
+                     ? String(localized: "Type shortcut…")
+                     : (settings.hotkeyBindings[action.rawValue]?.displayString ?? "—"))
+                    .font(.body.monospaced())
+                    .frame(minWidth: 96)
+                    .padding(6)
+                    .background(isRecording ? Color.accentColor.opacity(0.25) : Color.secondary.opacity(0.1))
+                    .cornerRadius(6)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 6)
+                            .stroke(isRecording ? Color.accentColor : .clear, lineWidth: 1.5)
+                    )
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
             Toggle("", isOn: Binding(
                 get: { settings.hotkeyBindings[action.rawValue]?.isEnabled ?? false },
                 set: { enabled in
@@ -149,35 +248,6 @@ struct HotkeyRow: View {
             ))
             .labelsHidden()
         }
-        .focusable()
-        .onKeyPress { press in
-            guard recording else { return .ignored }
-            var mods: UInt32 = 0
-            if press.modifiers.contains(.control) { mods |= UInt32(controlKey) }
-            if press.modifiers.contains(.option) { mods |= UInt32(optionKey) }
-            if press.modifiers.contains(.shift) { mods |= UInt32(shiftKey) }
-            if press.modifiers.contains(.command) { mods |= UInt32(cmdKey) }
-            let keyCode = Self.keyCode(for: press.key)
-            let newBinding = HotkeyBinding(keyCode: keyCode, modifiers: mods, isEnabled: true)
-            let conflicts = AppServices.shared.hotkeys.conflicts(for: newBinding, excluding: action)
-            settings.hotkeyBindings[action.rawValue] = newBinding
-            AppServices.shared.hotkeys.registerAll()
-            recording = false
-            if !conflicts.isEmpty {
-                AppServices.shared.notifications.show(
-                    title: String(localized: "Shortcut conflict"),
-                    body: conflicts.map(\.title).joined(separator: ", ")
-                )
-            }
-            return .handled
-        }
-    }
-
-    static func keyCode(for key: KeyEquivalent) -> UInt32 {
-        let map: [String: UInt32] = [
-            "1":18,"2":19,"3":20,"4":21,"5":23,"6":22,"7":26,"8":28,"9":25,"0":29
-        ]
-        return map[key.character.lowercased()] ?? 18
     }
 }
 

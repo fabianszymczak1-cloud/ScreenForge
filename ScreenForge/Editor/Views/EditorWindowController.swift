@@ -66,6 +66,32 @@ final class EditorWindowManager {
     }
 }
 
+/// Editor window that takes the keyboard without activating ScreenForge.
+///
+/// A capture hotkey usually fires while another app is frontmost, often in a fullscreen or Split View
+/// space. Forcing activation from there leaves WindowServer treating ScreenForge as that space's owner,
+/// so after a while Mission Control and Dock clicks keep bouncing back to the fullscreen app until
+/// relaunch. A nonactivating panel can still be key, so ⌘↩ and typing reach it, and it opens over the
+/// current space instead of switching to a desktop.
+final class EditorPanel: NSPanel {
+    override var canBecomeKey: Bool { true }
+    override var canBecomeMain: Bool { false }
+
+    init(contentRect: NSRect) {
+        super.init(
+            contentRect: contentRect,
+            styleMask: [.titled, .closable, .miniaturizable, .resizable, .nonactivatingPanel],
+            backing: .buffered,
+            defer: false
+        )
+        hidesOnDeactivate = false
+        isFloatingPanel = false
+        becomesKeyOnlyIfNeeded = false
+        isRestorable = false
+        collectionBehavior = [.managed, .participatesInCycle, .moveToActiveSpace, .fullScreenAuxiliary]
+    }
+}
+
 @MainActor
 final class EditorWindowController: NSWindowController, NSWindowDelegate {
     let documentModel: EditorDocument
@@ -83,17 +109,10 @@ final class EditorWindowController: NSWindowController, NSWindowDelegate {
     init(document: EditorDocument) {
         self.documentModel = document
         self.previousApp = NSWorkspace.shared.frontmostApplication
-        let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 1100, height: 720),
-            styleMask: [.titled, .closable, .miniaturizable, .resizable],
-            backing: .buffered,
-            defer: false
-        )
+        let window = EditorPanel(contentRect: NSRect(x: 0, y: 0, width: 1100, height: 720))
         window.title = "ScreenForge"
         window.center()
         window.minSize = NSSize(width: 700, height: 480)
-        window.isRestorable = false
-        window.collectionBehavior = [.managed, .participatesInCycle]
         super.init(window: window)
         window.delegate = self
         setupUI()
@@ -507,6 +526,8 @@ final class EditorWindowController: NSWindowController, NSWindowDelegate {
             self.keyMonitor = nil
         }
         onClose?(documentModel.id)
+        // A save sheet or the unsaved-changes alert can activate the app; do not stay frontmost with no window.
+        DispatchQueue.main.async { AppActivation.resignAfterTransientUI() }
     }
 
     func windowShouldClose(_ sender: NSWindow) -> Bool {

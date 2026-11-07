@@ -187,6 +187,8 @@
 "Remember app and window name" = "Remember app and window name";
 "Request Accessibility" = "Request Accessibility";
 "Restore default shortcuts" = "Restore default shortcuts";
+"Type shortcut…" = "Type shortcut…";
+"Click a shortcut, then press the new combination with ⌃, ⌥ or ⌘. Esc cancels." = "Click a shortcut, then press the new combination with ⌃, ⌥ or ⌘. Esc cancels.";
 "Restore defaults" = "Restore defaults";
 "Save" = "Save";
 "Save and notify" = "Save and notify";

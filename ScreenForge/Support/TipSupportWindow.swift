@@ -28,8 +28,8 @@ final class TipSupportWindowController: NSWindowController {
 
     func show() {
         window?.center()
+        AppActivation.activateForDocumentWindow()
         window?.makeKeyAndOrderFront(nil)
-        NSApp.activate(ignoringOtherApps: true)
     }
 }
 
